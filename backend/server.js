@@ -14,7 +14,9 @@ app.use(cors({
     origin: FRONTEND_URL,
     credentials: true,
 }));
-
+app.get("/", (req, res) => {
+  res.send("Backend is running");
+});
 app.use("/api/v1", userRoute);
 app.use("/api/v1", blogRoute);
 
