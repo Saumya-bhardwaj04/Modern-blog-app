@@ -1,7 +1,7 @@
 const User = require("../models/userSchema");
 const bcrypt = require('bcrypt');
 const { generateJWT, verifyJWT } = require("../utils/generateToken");
-const transporter = require("../utils/transporter");
+const sendEmail = require("../utils/sendEmail");
 const ShortUniqueId = require("short-unique-id");
 const { randomUUID } = new ShortUniqueId({ length: 5 })
 // google auth
@@ -11,7 +11,7 @@ const {
     deleteImagefromCloudinary,
     uploadImage,
 } = require("../utils/uploadImage");
-const { FIREBASE_TYPE, FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, FIREBASE_CLIENT_ID, FIREBASE_AUTH_URI, FIREBASE_TOKEN_URI, FIREBASE_AUTH_PROVIDER_X509_CERT_URL, FIREBASE_CLIENT_X509_CERT_URL, FIREBASE_UNIVERSAL_DOMAIN, EMAIL_USER, FRONTEND_URL } = require("../config/dotenv.config");
+const { FIREBASE_TYPE, FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL, FIREBASE_CLIENT_ID, FIREBASE_AUTH_URI, FIREBASE_TOKEN_URI, FIREBASE_AUTH_PROVIDER_X509_CERT_URL, FIREBASE_CLIENT_X509_CERT_URL, FIREBASE_UNIVERSAL_DOMAIN, FRONTEND_URL } = require("../config/dotenv.config");
 admin.initializeApp({
     credential: admin.credential.cert(
         {
@@ -70,14 +70,14 @@ async function createUser(req, res) {
                     id: checkForexistingUser._id,
                 })
                 //email logic
-                const sendingEmail = transporter.sendMail({
-                    from: EMAIL_USER,
+                await sendEmail({
                     to: checkForexistingUser.email,
-                    subject: "Email Verification",
-                    text: "Please verify your email",
-                    html: `<h1>Click on the link to verify your email</h1>
-                            <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
-                })
+                    subject: "Verify your email",
+                    html: `
+                    <h2>Welcome to Meloque 🎉</h2>
+                    <p>Click below to verify your email:</p>
+                    <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email </a>`,
+                });
                 return res.status(200).json({
                     success: true,
                     message: "Please check your email to verify your account",
@@ -96,14 +96,14 @@ async function createUser(req, res) {
             email: newUser.email,
             id: newUser._id,
         })
-        const sendingEmail = transporter.sendMail({
-            from: EMAIL_USER,
-            to: email,
-            subject: "Email Verification",
-            text: "Please verify your email",
-            html: `<h1>Click on the link to veridy your email</h1>
-            <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
-        })
+        await sendEmail({
+            to: newUser.email,
+            subject: "Verify your email",
+            html: `
+            <h2>Welcome to Meloque 🎉</h2>
+            <p>Click below to verify your email:</p>
+            <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email </a>`,
+        });
         return res.status(200).json({
             success: true,
             message: "Please check your email to verify your account",
@@ -160,7 +160,6 @@ async function googleAuth(req, res) {
             });
         }
         const response = await getAuth().verifyIdToken(accessToken);
-        console.log("✅Google token decoded:", response);
         const { name, email } = response;
         let user = await User.findOne({ email });
         if (user) {
@@ -199,7 +198,6 @@ async function googleAuth(req, res) {
         let newUser = await User.create({
             name,
             email,
-            password: undefined,
             googleAuth: true,
             verify: true,
             username,
@@ -277,14 +275,14 @@ async function login(req, res) {
                 email: checkForexistingUser.email,
                 id: checkForexistingUser._id,
             })
-            const sendingEmail = transporter.sendMail({
-                from: EMAIL_USER,
-                to: checkForexistingUser.email,
-                subject: "Email Verification",
-                text: "Please verify your email",
-                html: `<h1>Click on the link to veridy your email</h1>
-            <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
-            })
+            await sendEmail({
+                    to: checkForexistingUser.email,
+                    subject: "Verify your email",
+                    html: `
+                    <h2>Welcome to Meloque 🎉</h2>
+                    <p>Click below to verify your email:</p>
+                    <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email </a>`,
+                });
             return res.status(400).json({
                 success: false,
                 message: "Please verify your email",

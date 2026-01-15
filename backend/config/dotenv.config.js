@@ -10,6 +10,8 @@ module.exports = {
 
   JWT_SECRET: process.env.JWT_SECRET,
 
+  RESEND_API_KEY: process.env.RESEND_API_KEY,
+
   EMAIL_HOST: process.env.EMAIL_HOST,
   EMAIL_PORT: process.env.EMAIL_PORT,
   EMAIL_USER: process.env.EMAIL_USER,
