@@ -160,6 +160,7 @@ async function googleAuth(req, res) {
             });
         }
         const response = await getAuth().verifyIdToken(accessToken);
+        console.log("✅Google token decoded:", response);
         const { name, email } = response;
         let user = await User.findOne({ email });
         if (user) {
@@ -198,6 +199,7 @@ async function googleAuth(req, res) {
         let newUser = await User.create({
             name,
             email,
+            password: undefined,
             googleAuth: true,
             verify: true,
             username,
