@@ -19,7 +19,6 @@ app.use(cors({
 app.get("/", (req, res) => {
     res.send("Backend is running");
 });
-app.options("*", cors());
 app.use("/api/v1", userRoute);
 app.use("/api/v1", blogRoute);
 
