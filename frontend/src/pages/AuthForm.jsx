@@ -4,7 +4,7 @@ import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login } from "../utils/userSlice";
-import Input from "../components/Input.jsx";
+import Input from "../components/Input";
 import googleIcon from "../assets/google-icon-logo-svgrepo-com.svg";
 import { googleAuth, handleRedirectResult } from "../utils/firebase";
 
@@ -16,12 +16,9 @@ function AuthForm({ type }) {
     async function handleAuthForm(e) {
         e.preventDefault();
         try {
-            const payload = type === "signin"
-                ? { email: userData.email, password: userData.password }
-                : userData;
             const res = await axios.post(
                 `${import.meta.env.VITE_BACKEND_URL}/${type}`,
-                payload
+                userData
             );
             if (type == "signup") {
                 toast.success(res.data.message)
@@ -88,7 +85,6 @@ function AuthForm({ type }) {
                 toast.error("Authentication failed");
             }
         };
-
         handleRedirect();
     }, [dispatch, navigate]);
 

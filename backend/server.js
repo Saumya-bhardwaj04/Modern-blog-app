@@ -4,15 +4,15 @@ const dbConnect = require("./config/dbConnect")
 const userRoute = require("./routes/userRoutes");
 const blogRoute = require("./routes/blogRoutes");
 const cloudinaryConfig = require("./config/cloudinaryConfig");
-const { PORT } = require("./config/dotenv.config");
+const { PORT, ALLOWED_ORIGINS } = require("./config/dotenv.config");
 const app = express();
 
 const port = PORT || 5000;
 
 app.use(express.json());
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
+const allowedOrigins = ALLOWED_ORIGINS
+  ? ALLOWED_ORIGINS.split(",")
   : [];
 
 app.use(

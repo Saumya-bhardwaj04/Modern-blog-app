@@ -18,7 +18,7 @@ admin.initializeApp({
             type: FIREBASE_TYPE,
             project_id: FIREBASE_PROJECT_ID,
             private_key_id: FIREBASE_PRIVATE_KEY_ID,
-            private_key: FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+            private_key: FIREBASE_PRIVATE_KEY,
             client_email: FIREBASE_CLIENT_EMAIL,
             client_id: FIREBASE_CLIENT_ID,
             auth_uri: FIREBASE_AUTH_URI,
@@ -152,86 +152,86 @@ async function verifyEmail(req, res) {
 // google auth
 async function googleAuth(req, res) {
     try {
-            const { accessToken } = req.body;
-            if (!accessToken) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Access token missing",
-                });
-            }
-            const response = await getAuth().verifyIdToken(accessToken);
-            const { name, email } = response;
-            let user = await User.findOne({ email });
-            if (user) {
-                // already registered
-                if (user.googleAuth) {
-                    const token = await generateJWT({
-                        email: user.email,
-                        id: user._id,
-                    })
-                    return res.status(200).json({
-                        success: true,
-                        message: "logged in successfully",
-                        user: {
-                            id: user._id,
-                            name: user.name,
-                            email: user.email,
-                            profilePic: user.profilePic,
-                            username: user.username,
-                            showLikedBlogs: user.showLikedBlogs,
-                            showSavedBlogs: user.showSavedBlogs,
-                            bio: user.bio,
-                            followers: user.followers,
-                            following: user.following,
-                            token,
-                        },
-                    })
-                } else {
-                    return res.status(400).json({
-                        success: true,
-                        message: "This email is already registered try signing in!",
-                    })
-                }
-    
-            }
-            const username = email.split("@")[0] + randomUUID();
-            let newUser = await User.create({
-                name,
-                email,
-                googleAuth: true,
-                verify: true,
-                username,
-            })
-            const token = await generateJWT({
-                email: newUser.email,
-                id: newUser._id,
-            })
-            return res.status(200).json({
-                success: true,
-                message: "Registeration successfully",
-                user: {
-                    id: newUser._id,
-                    name: newUser.name,
-                    email: newUser.email,
-                    profilePic: newUser.profilePic,
-                    username: newUser.username,
-                    showLikedBlogs: newUser.showLikedBlogs,
-                    showSavedBlogs: newUser.showSavedBlogs,
-                    bio: newUser.bio,
-                    followers: newUser.followers,
-                    following: newUser.following,
-                    token,
-                },
-            })
-    
-        } catch (error) {
-            console.error("Google Auth Error:", error);
-            return res.status(500).json({
+        const { accessToken } = req.body;
+        if (!accessToken) {
+            return res.status(400).json({
                 success: false,
-                message: "Google authentication failed",
-                error: error.message,
+                message: "Access token missing",
             });
         }
+        const response = await getAuth().verifyIdToken(accessToken);
+        const { name, email } = response;
+        let user = await User.findOne({ email });
+        if (user) {
+            // already registered
+            if (user.googleAuth) {
+                let token = await generateJWT({
+                    email: user.email,
+                    id: user._id,
+                })
+                return res.status(200).json({
+                    success: true,
+                    message: "logged in successfully",
+                    user: {
+                        id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        profilePic: user.profilePic,
+                        username: user.username,
+                        showLikedBlogs: user.showLikedBlogs,
+                        showSavedBlogs: user.showSavedBlogs,
+                        bio: user.bio,
+                        followers: user.followers,
+                        following: user.following,
+                        token,
+                    },
+                })
+            } else {
+                return res.status(400).json({
+                    success: true,
+                    message: "This email is already registered try signing in!",
+                })
+            }
+
+        }
+        const username = email.split("@")[0] + randomUUID();
+        let newUser = await User.create({
+            name,
+            email,
+            googleAuth: true,
+            verify: true,
+            username,
+        })
+        const token = await generateJWT({
+            email: newUser.email,
+            id: newUser._id,
+        })
+        return res.status(200).json({
+            success: true,
+            message: "Registeration successfull",
+            user: {
+                id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
+                profilePic: newUser.profilePic,
+                username: newUser.username,
+                showLikedBlogs: newUser.showLikedBlogs,
+                showSavedBlogs: newUser.showSavedBlogs,
+                bio: newUser.bio,
+                followers: newUser.followers,
+                following: newUser.following,
+                token,
+            },
+        })
+
+    } catch (error) {
+        console.error("Google Auth Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Google authentication failed",
+            error: error.message,
+        });
+    }
 }
 async function login(req, res) {
     const { email, password } = req.body
