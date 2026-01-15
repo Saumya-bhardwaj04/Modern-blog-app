@@ -70,14 +70,18 @@ async function createUser(req, res) {
                     id: checkForexistingUser._id,
                 })
                 //email logic
-                const sendingEmail = transporter.sendMail({
-                    from: EMAIL_USER,
-                    to: checkForexistingUser.email,
-                    subject: "Email Verification",
-                    text: "Please verify your email",
-                    html: `<h1>Click on the link to verify your email</h1>
-            <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
-                })
+                try {
+                    await transporter.sendMail({
+                        from: `"Meloque" <${EMAIL_USER}>`,
+                        to: checkForexistingUser.email,
+                        subject: "Email Verification",
+                        text: "Please verify your email",
+                        html: `<h1>Click on the link to verify your email</h1>
+                        <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
+                    })
+                } catch (mailError) {
+                    console.error("Verification email failed:", mailError.message);
+                }
                 return res.status(200).json({
                     success: true,
                     message: "Please check your email to verify your account",
@@ -96,14 +100,18 @@ async function createUser(req, res) {
             email: newUser.email,
             id: newUser._id,
         })
-        const sendingEmail = transporter.sendMail({
-            from: EMAIL_USER,
-            to: email,
-            subject: "Email Verification",
-            text: "Please verify your email",
-            html: `<h1>Click on the link to veridy your email</h1>
-            <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
-        })
+        try {
+            await transporter.sendMail({
+                from: `"Meloque" <${EMAIL_USER}>`,
+                to: email,
+                subject: "Email Verification",
+                text: "Please verify your email",
+                html: `<h1>Click on the link to verify your email</h1>
+                <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
+            })
+        } catch (mailError) {
+            console.error("Verification email failed:", mailError.message);
+        }
         return res.status(200).json({
             success: true,
             message: "Please check your email to verify your account",
