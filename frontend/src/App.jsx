@@ -26,7 +26,7 @@ function App() {
           const idToken = await result.user.getIdToken();
           await axios.post(
             `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
-            { token: idToken },
+            { accessToken: idToken },
             { withCredentials: true }
           );
           navigate("/home");
