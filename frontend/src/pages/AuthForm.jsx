@@ -50,7 +50,7 @@ function AuthForm({ type }) {
             const idToken = await userData.getIdToken();
             const res = await axios.post(
                 `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
-                { token: idToken },
+                { accessToken: idToken },
                 { withCredentials: true }
             );
             dispatch(login(res.data.user))
