@@ -33,7 +33,7 @@ function Navbar() {
     }, [window.location.pathname]);
     return (
         <>
-            <div className="bg-white max-w-full relative flex justify-between items-center h-[70px] px-2 sm:px-[30px]  border-b drop-shadow-sm">
+            <div className="sticky top-0 z-50 bg-white max-w-full flex justify-between items-center h-[70px] px-2 sm:px-[30px]  border-b drop-shadow-sm">
                 <div className="flex gap-4 items-center relative">
                     <Link to={token ? "/home" : "/"}>
                         <div className="">
