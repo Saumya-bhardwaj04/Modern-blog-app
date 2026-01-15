@@ -9,19 +9,22 @@ const app = express();
 
 const port = PORT || 5000;
 
-app.use(express.json()); 
+app.use(express.json());
 app.use(cors({
     origin: FRONTEND_URL,
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
 }));
 app.get("/", (req, res) => {
-  res.send("Backend is running");
+    res.send("Backend is running");
 });
+app.options("*", cors());
 app.use("/api/v1", userRoute);
 app.use("/api/v1", blogRoute);
 
 app.listen(port, () => {
-    console.log("server running on port 3000");
+    console.log(`Server running on port ${port}`);
     dbConnect();
     cloudinaryConfig();
 })
