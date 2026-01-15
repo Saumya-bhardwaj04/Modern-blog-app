@@ -213,9 +213,16 @@ function BlogPage() {
                     <span className="loader"></span>
                 </div>)
             }
-            {
-                isOpen && <Comment />
-            }
+            {isOpen && (
+                <>
+                    <div
+                        className="fixed inset-0 bg-black/30 z-30"
+                        onClick={() => dispatch(setIsOpen(false))}
+                    />
+                    <Comment />
+                </>
+            )}
+
         </div>
     )
 }

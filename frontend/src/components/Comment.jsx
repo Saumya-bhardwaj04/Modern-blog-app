@@ -37,7 +37,7 @@ function Comment() {
     }
 
     return (
-        <div className="bg-white h-screen p-5 fixed top-0 right-0 w-[400px] border-l drop-shadow-xl overflow-y-scroll">
+          <div className="bg-white h-[calc(100vh-70px)] p-5 fixed top-[70px] right-0 w-[400px] border-l drop-shadow-xl overflow-y-scroll z-40">
             <div className="flex justify-between">
                 <h1 className="text-xl font-medium">
                     Comment ({comments?.length || 0})

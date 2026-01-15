@@ -13,6 +13,7 @@ function Navbar() {
     const [showSearchBar, setShowSearchBar] = useState(false);
     const location = useLocation();
     const isStartPage = location.pathname === "/";
+    const isAuthPage = location.pathname === "/signin" || location.pathname === "/signup";
 
     const dispatch = useDispatch()
     function handleLogout() {
@@ -40,47 +41,50 @@ function Navbar() {
                             <img src={logo} alt="" />
                         </div>
                     </Link>
-
-                    <div
-                        className={`relative group  max-sm:absolute max-sm:z-40 max-sm:top-16 sm:block ${showSearchBar ? " max-sm:block " : " max-sm:hidden "
-                            }`}
-                    >
-                        <i className="fi fi-rr-search absolute text-lg top-1/2 -translate-y-1/2  ml-4 opacity-40"></i>
-                        <input
-                            type="text"
-                            disabled={isStartPage}
-                            className={`bg-gray-100 focus:outline-none max-sm:w-[calc(100vw_-_70px)] rounded-full pl-12 p-2 
+                    {!isAuthPage && (
+                        <div
+                            className={`relative group  max-sm:absolute max-sm:z-40 max-sm:top-16 sm:block ${showSearchBar ? " max-sm:block " : " max-sm:hidden "
+                                }`}>
+                            <i className="fi fi-rr-search absolute text-lg top-1/2 -translate-y-1/2  ml-4 opacity-40"></i>
+                            <input
+                                type="text"
+                                disabled={isStartPage}
+                                className={`bg-gray-100 focus:outline-none max-sm:w-[calc(100vw_-_70px)] rounded-full pl-12 p-2 
                              ${isStartPage ? "cursor-not-allowed opacity-50" : ""}
                              `}
-                            placeholder="Search"
-                            value={searchQuery ? searchQuery : ""}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (isStartPage) return;
-                                if (e.code == "Enter" || e.code == "NumpadEnter" || e.keyCode == "13") {
-                                    if (searchQuery.trim()) {
-                                        setShowSearchBar(false);
-                                        if (showSearchBar) {
-                                            setSearchQuery("");
+                                placeholder="Search"
+                                value={searchQuery ? searchQuery : ""}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (isStartPage) return;
+                                    if (e.code == "Enter" || e.code == "NumpadEnter" || e.keyCode == "13") {
+                                        if (searchQuery.trim()) {
+                                            navigate(`/search?q=${searchQuery.trim()}`);
+                                            setShowSearchBar(false);
+                                            if (showSearchBar) {
+                                                setSearchQuery("");
+                                            }
                                         }
-                                        navigate(`/search?q=${searchQuery.trim()}`);
                                     }
-                                }
-                            }}
-                        />
-                        {isStartPage && (
-                            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-sm px-3 py-1 rounded-md whitespace-nowrap z-50">
-                                Login to enable search
-                            </div>
-                        )}
-                    </div>
+                                }}
+                            />
+                            {isStartPage && (
+                                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-sm px-3 py-1 rounded-md whitespace-nowrap z-50">
+                                    Login to enable search
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                 </div>
 
                 <div className="flex gap-5 justify-center items-center">
-                    <i
-                        className="fi fi-rr-search  text-xl sm:hidden cursor-pointer "
-                        onClick={() => setShowSearchBar((prev) => !prev)}
-                    ></i>
+                    {!isAuthPage && (
+                        <i
+                            className="fi fi-rr-search text-xl sm:hidden cursor-pointer"
+                            onClick={() => setShowSearchBar((prev) => !prev)}
+                        ></i>
+                    )}
                     <Link
                         to={token ? "/add-blog" : "/signin?redirect=/add-blog"}
                     >                        <div className=" flex gap-2 items-center">
