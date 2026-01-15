@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import AuthForm from "./pages/AuthForm";
 import Navbar from "./components/Navbar";
 import HomePage from "./components/HomePage";
@@ -10,8 +10,34 @@ import EditProfile from "./pages/EditProfile";
 import SearchBlogs from "./components/SearchBlogs";
 import Setting from "./components/Setting";
 import StartPage from "./pages/StartPage";
+import { useEffect } from "react";
+import { getRedirectResult } from "firebase/auth";
+import { auth } from "./utils/firebase";
+import axios from "axios";
 
 function App() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          const idToken = await result.user.getIdToken();
+          await axios.post(
+            `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
+            { token: idToken },
+            { withCredentials: true }
+          );
+          navigate("/home");
+        }
+      } catch (err) {
+        console.error("Redirect error:", err);
+      }
+    };
+    checkRedirect();
+  }, [navigate]);
+
   return (
     <Routes>
       <Route path="/" element={<Navbar />}>
