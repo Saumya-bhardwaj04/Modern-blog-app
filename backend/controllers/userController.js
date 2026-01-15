@@ -70,18 +70,14 @@ async function createUser(req, res) {
                     id: checkForexistingUser._id,
                 })
                 //email logic
-                try {
-                    await transporter.sendMail({
-                        from: `"Meloque" <${EMAIL_USER}>`,
-                        to: checkForexistingUser.email,
-                        subject: "Email Verification",
-                        text: "Please verify your email",
-                        html: `<h1>Click on the link to verify your email</h1>
-                        <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
-                    })
-                } catch (mailError) {
-                    console.error("Verification email failed:", mailError.message);
-                }
+                const sendingEmail = transporter.sendMail({
+                    from: EMAIL_USER,
+                    to: checkForexistingUser.email,
+                    subject: "Email Verification",
+                    text: "Please verify your email",
+                    html: `<h1>Click on the link to verify your email</h1>
+                            <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
+                })
                 return res.status(200).json({
                     success: true,
                     message: "Please check your email to verify your account",
@@ -100,18 +96,14 @@ async function createUser(req, res) {
             email: newUser.email,
             id: newUser._id,
         })
-        try {
-            await transporter.sendMail({
-                from: `"Meloque" <${EMAIL_USER}>`,
-                to: email,
-                subject: "Email Verification",
-                text: "Please verify your email",
-                html: `<h1>Click on the link to verify your email</h1>
-                <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
-            })
-        } catch (mailError) {
-            console.error("Verification email failed:", mailError.message);
-        }
+        const sendingEmail = transporter.sendMail({
+            from: EMAIL_USER,
+            to: email,
+            subject: "Email Verification",
+            text: "Please verify your email",
+            html: `<h1>Click on the link to veridy your email</h1>
+            <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email</a>`,
+        })
         return res.status(200).json({
             success: true,
             message: "Please check your email to verify your account",
@@ -160,95 +152,86 @@ async function verifyEmail(req, res) {
 // google auth
 async function googleAuth(req, res) {
     try {
-        const { accessToken } = req.body;
-        if (!accessToken) {
-            return res.status(400).json({
-                success: false,
-                message: "Access token missing",
-            });
-        }
-        const decoded = await getAuth().verifyIdToken(accessToken);
-        const email = decoded.email;
-        const name =
-            decoded.name ||
-            decoded.email?.split("@")[0] ||
-            "User";
-
-        if (!email) {
-            return res.status(400).json({
-                success: false,
-                message: "Invalid Google token",
-            });
-        }
-        let user = await User.findOne({ email });
-        if (user) {
-            if (!user.googleAuth) {
+            const { accessToken } = req.body;
+            if (!accessToken) {
                 return res.status(400).json({
                     success: false,
-                    message: "Email already registered with password login",
+                    message: "Access token missing",
                 });
             }
+            const response = await getAuth().verifyIdToken(accessToken);
+            const { name, email } = response;
+            let user = await User.findOne({ email });
+            if (user) {
+                // already registered
+                if (user.googleAuth) {
+                    const token = await generateJWT({
+                        email: user.email,
+                        id: user._id,
+                    })
+                    return res.status(200).json({
+                        success: true,
+                        message: "logged in successfully",
+                        user: {
+                            id: user._id,
+                            name: user.name,
+                            email: user.email,
+                            profilePic: user.profilePic,
+                            username: user.username,
+                            showLikedBlogs: user.showLikedBlogs,
+                            showSavedBlogs: user.showSavedBlogs,
+                            bio: user.bio,
+                            followers: user.followers,
+                            following: user.following,
+                            token,
+                        },
+                    })
+                } else {
+                    return res.status(400).json({
+                        success: true,
+                        message: "This email is already registered try signing in!",
+                    })
+                }
+    
+            }
+            const username = email.split("@")[0] + randomUUID();
+            let newUser = await User.create({
+                name,
+                email,
+                googleAuth: true,
+                verify: true,
+                username,
+            })
             const token = await generateJWT({
-                email: user.email,
-                id: user._id,
+                email: newUser.email,
+                id: newUser._id,
             })
             return res.status(200).json({
                 success: true,
-                message: "logged in successfully",
+                message: "Registeration successfully",
                 user: {
-                    id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    profilePic: user.profilePic,
-                    username: user.username,
-                    showLikedBlogs: user.showLikedBlogs,
-                    showSavedBlogs: user.showSavedBlogs,
-                    bio: user.bio,
-                    followers: user.followers,
-                    following: user.following,
+                    id: newUser._id,
+                    name: newUser.name,
+                    email: newUser.email,
+                    profilePic: newUser.profilePic,
+                    username: newUser.username,
+                    showLikedBlogs: newUser.showLikedBlogs,
+                    showSavedBlogs: newUser.showSavedBlogs,
+                    bio: newUser.bio,
+                    followers: newUser.followers,
+                    following: newUser.following,
                     token,
                 },
             })
+    
+        } catch (error) {
+            console.error("Google Auth Error:", error);
+            return res.status(500).json({
+                success: false,
+                message: "Google authentication failed",
+                error: error.message,
+            });
         }
-        const username = email.split("@")[0] + randomUUID();
-        let newUser = await User.create({
-            name,
-            email,
-            googleAuth: true,
-            verify: true,
-            username,
-            profilePic: decoded.picture || null,
-        })
-        const token = await generateJWT({
-            email: newUser.email,
-            id: newUser._id,
-        })
-        return res.status(200).json({
-            success: true,
-            message: "Registeration successfully",
-            user: {
-                id: newUser._id,
-                name: newUser.name,
-                email: newUser.email,
-                profilePic: newUser.profilePic,
-                username: newUser.username,
-                showLikedBlogs: newUser.showLikedBlogs,
-                showSavedBlogs: newUser.showSavedBlogs,
-                bio: newUser.bio,
-                followers: newUser.followers,
-                following: newUser.following,
-                token,
-            },
-        })
-
-    } catch (error) {
-        console.error("Google Auth Error:", error);
-        return res.status(500).json({
-            success: false,
-            message: "Google authentication failed",
-            error: error.message,
-        });
-    }
 }
 async function login(req, res) {
     const { email, password } = req.body

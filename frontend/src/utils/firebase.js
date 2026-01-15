@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import {
-    getAuth, GoogleAuthProvider,signInWithPopup, signInWithRedirect
+    getAuth, GoogleAuthProvider,signInWithPopup, signInWithRedirect,getRedirectResult
 } from "firebase/auth";
 import toast from "react-hot-toast";
 
@@ -25,15 +25,30 @@ const isMobile = /Android|iPhone|iPad|iPod/i.test(
 export async function googleAuth() {
   try {
     if (isMobile) {
-      await signInWithRedirect(auth, provider);
-      return null;
-    } else {
-      const result = await signInWithPopup(auth, provider);
-      return result.user;
+            await signInWithRedirect(auth, provider);
+            const result = await getRedirectResult(auth);
+            if (result) {
+                return result.user;
+            }
+        } else {
+            const result = await signInWithPopup(auth, provider);
+            return result.user;
+        }
+      } catch (error) {
+        console.error("Authentication error:", error);
+        toast.error("Please try again later");
+        return null;
     }
-  } catch (error) {
-    console.error("Authentication error:", error);
-    toast.error("Please try again later");
-    return null;
-  }
+}
+export async function handleRedirectResult() {
+    try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+            return result.user;
+        }
+    } catch (error) {
+        console.error("Redirect error:", error);
+        toast.error("Authentication failed. Please try again.");
+        return null;
+    }
 }
