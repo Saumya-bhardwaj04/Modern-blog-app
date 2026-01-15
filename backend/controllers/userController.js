@@ -167,39 +167,48 @@ async function googleAuth(req, res) {
                 message: "Access token missing",
             });
         }
-        const response = await getAuth().verifyIdToken(accessToken);
-        const { name, email } = response;
+        const decoded = await getAuth().verifyIdToken(accessToken);
+        const email = decoded.email;
+        const name =
+            decoded.name ||
+            decoded.email?.split("@")[0] ||
+            "User";
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid Google token",
+            });
+        }
         let user = await User.findOne({ email });
         if (user) {
-            if (user.googleAuth) {
-                const token = await generateJWT({
-                    email: user.email,
-                    id: user._id,
-                })
-                return res.status(200).json({
-                    success: true,
-                    message: "logged in successfully",
-                    user: {
-                        id: user._id,
-                        name: user.name,
-                        email: user.email,
-                        profilePic: user.profilePic,
-                        username: user.username,
-                        showLikedBlogs: user.showLikedBlogs,
-                        showSavedBlogs: user.showSavedBlogs,
-                        bio: user.bio,
-                        followers: user.followers,
-                        following: user.following,
-                        token,
-                    },
-                })
-            } else {
+            if (!user.googleAuth) {
                 return res.status(400).json({
-                    success: true,
-                    message: "This email is already registered try signing in!",
-                })
+                    success: false,
+                    message: "Email already registered with password login",
+                });
             }
-
+            const token = await generateJWT({
+                email: user.email,
+                id: user._id,
+            })
+            return res.status(200).json({
+                success: true,
+                message: "logged in successfully",
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    profilePic: user.profilePic,
+                    username: user.username,
+                    showLikedBlogs: user.showLikedBlogs,
+                    showSavedBlogs: user.showSavedBlogs,
+                    bio: user.bio,
+                    followers: user.followers,
+                    following: user.following,
+                    token,
+                },
+            })
         }
         const username = email.split("@")[0] + randomUUID();
         let newUser = await User.create({
@@ -208,6 +217,7 @@ async function googleAuth(req, res) {
             googleAuth: true,
             verify: true,
             username,
+            profilePic: decoded.picture || null,
         })
         const token = await generateJWT({
             email: newUser.email,
