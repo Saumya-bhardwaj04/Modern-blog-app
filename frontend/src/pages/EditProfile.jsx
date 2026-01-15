@@ -70,9 +70,13 @@ function EditProfile() {
         }
       );
       toast.success(res.data.message);
-      dispatch(login({ ...res.data.user, token, email, id: userId }));
+      dispatch(
+        login({
+          id: userId, email, token, ...res.data.user,
+        })
+      );
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Update failed");
     } finally {
       stopLoading();
     }
