@@ -1,15 +1,13 @@
 const nodemailer = require("nodemailer");
-const { EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS } = require("../config/dotenv.config");
+const { EMAIL_USER, EMAIL_PASS } = require("../config/dotenv.config");
 
 const transporter = nodemailer.createTransport({
-    host: EMAIL_HOST,
-    port: Number(EMAIL_PORT),
-    secure: Number(EMAIL_PORT) === 465,
-    auth: {
-        user: EMAIL_USER,
-        pass: EMAIL_PASS,
-    }
-})
+  service: "gmail",
+  auth: {
+    user: EMAIL_USER,
+    pass: EMAIL_PASS, 
+  },
+});
 transporter.verify((error, success) => {
     if (error) {
         console.error("Email transporter error:", error);
