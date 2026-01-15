@@ -57,6 +57,7 @@ function Comment() {
     )
 }
 function DisplayComments({ comments, userId, blogId, token, activeReply, setActieReply, currentPopup, setCurrentPopup, currentEditComment, setCurrentEditComment, creatorId }) {
+    const loggedInUser = useSelector((state) => state.user);
     const [reply, setReply] = useState("");
     const [updateComment, setUpdateComment] = useState("");
     const dispatch = useDispatch();
@@ -141,131 +142,163 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
             setCurrentEditComment(null);
         }
     }
-    return <>
-        {
+    return (
+    <>
+      {(comments || []).map((comment) => {
+        const isOwnComment = comment?.user?._id === loggedInUser.id;
 
-            (comments || []).map((comment) => (
-                <div key={comment._id}>
-                    <hr className="my-2" />
-                    <div className="flex flex-col gap-2 my-4">
-                        {currentEditComment === comment._id ? (<div className="my-4">
-                            <textarea defaultValue={comment.comment} type="text" placeholder="Reply..." className="h-[150px] resize-none drop-shadow w-full p-3 text-lg focus:outline-none"
-                                onChange={(e) => setUpdateComment(e.target.value)}
-                            />
-                            <div className="flex gap-3">
+        const displayName = isOwnComment
+          ? loggedInUser.name
+          : comment.user.name;
 
-                                <button
-                                    onClick={() => setCurrentEditComment(null)}
-                                    className="bg-red-500 px-7 py-3 my-2 rounded-3xl">Cancel</button>
-                                <button
-                                    onClick={() => handleCommentUpdate(comment._id)}
-                                    className="bg-green-500 px-7 py-3 my-2 rounded-3xl">Update</button>
-                            </div>
+        const displayProfilePic = isOwnComment
+          ? loggedInUser.profilePic
+          : comment.user.profilePic;
 
-                        </div>) :
-                            (<>
-                                <div className="flex w-full justify-between">
-                                    <Link
-                                        to={`/@${comment.user.username}`}
-                                        className="flex gap-2"
-                                    >
-                                        <div className="flex gap-2">
-                                            <div className="w-10 h-10 aspect-square rounded-full overflow-hidden">
-                                                <img
-                                                    src={
-                                                        comment?.user?.profilePic
-                                                            ? comment?.user?.profilePic
-                                                            : `https://api.dicebear.com/9.x/initials/svg?seed=${comment?.user?.name}`
-                                                    }
-                                                    alt=""
-                                                    className="rounded-full w-full h-full object-cover"
-                                                />
-                                            </div>
-                                            <div>
-                                                <p className="capitalize font-medium">{comment?.user?.name}</p>
-                                                <p>{formateDate(comment?.createdAt)}</p>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                    {
-                                        comment?.user?._id === userId || userId === creatorId ?
-                                            (currentPopup == comment?._id ? (
-                                                <div className="bg-gray-200 w-[70px] rounded-lg">
-                                                    <i
-                                                        onClick={() => setCurrentPopup((prev) => prev == comment?._id ? null : comment?._id)}
-                                                        className="fi fi-br-cross relative left-12 text-sm mt-1 cursor-pointer"></i>
-                                                    {
-                                                        comment.user._id === userId ?
-                                                            (<p className="p-2 py-1 hover:bg-blue-300 " onClick={() => {
-                                                                setCurrentEditComment(comment._id)
-                                                                setCurrentPopup(null)
-                                                            }}>Edit</p>) : ("")
-                                                    }
+        return (
+          <div key={comment._id}>
+            <hr className="my-2" />
 
-                                                    <p className="p-2 py-1 hover:bg-red-300 " onClick={() => {
-                                                        handleCommentDelete(comment._id)
-                                                        setCurrentPopup(null)
-                                                    }}>Delete</p>
-
-
-                                                </div>
-                                            ) : (
-                                                <i className="fi fi-bs-menu-dots cursor-pointer"
-                                                    onClick={() => setCurrentPopup(comment._id)}
-                                                ></i>
-                                            )) : ("")
-                                    }
-
-                                </div>
-                                <p className="font-medium text-lg">{comment.comment}</p>
-
-                                <div className="flex justify-between">
-                                    <div className="flex gap-4">
-                                        <div className="cursor-pointer flex gap-2" >
-                                            {comment.likes.includes(userId) ? (
-                                                <i
-                                                    onClick={() => handleCommentLike(comment._id)}
-                                                    className="fi fi-sr-thumbs-up text-blue-600 text-lg mt-1"
-                                                ></i>
-                                            ) : (
-                                                <i
-                                                    onClick={() => handleCommentLike(comment._id)}
-                                                    className="fi fi-rr-social-network text-xl mt-1"
-                                                ></i>
-                                            )}
-                                            <p className="text-lg">{comment.likes.length}</p>
-                                        </div>
-                                        <div className="flex gap-2 cursor-pointer">
-                                            <i className="fi fi-sr-comment-alt text-lg mt-1 "></i>
-                                            <p className="text-lg">replies({comment.replies?.length || 0})</p>
-                                        </div>
-                                    </div>
-                                    <p onClick={() => handleActiveReply(comment._id)} className="text-lg hover:underline cursor-pointer">reply</p>
-                                </div>
-                            </>)
+            <div className="flex flex-col gap-2 my-4">
+              <div className="flex w-full justify-between">
+                <Link to={`/@${comment.user.username}`} className="flex gap-2">
+                  <div className="flex gap-2">
+                    <div className="w-10 h-10 aspect-square rounded-full overflow-hidden">
+                      <img
+                        src={
+                          displayProfilePic
+                            ? displayProfilePic
+                            : `https://api.dicebear.com/9.x/initials/svg?seed=${displayName}`
                         }
-                        {
-                            activeReply === comment._id && (
-
-                                <div className="my-4">
-                                    <textarea type="text" placeholder="Reply..." className="h-[150px] resize-none drop-shadow w-full p-3 text-lg focus:outline-none"
-                                        onChange={(e) => setReply(e.target.value)}
-                                    />
-                                    <button onClick={() => handleReply(comment._id)} className="bg-green-500 px-7 py-3 my-2">Add</button>
-                                </div>
-                            )
-                        }
-                        {
-                            (comment.replies.length || 0) > 0 &&
-                            <div className="pl-6 border-l">
-                                <DisplayComments comments={comment.replies || 0} userId={userId} blogId={blogId} token={token} activeReply={activeReply} setActieReply={setActieReply} currentPopup={currentPopup} setCurrentPopup={setCurrentPopup} currentEditComment={currentEditComment} setCurrentEditComment={setCurrentEditComment} creatorId={creatorId} />
-                            </div>
-                        }
+                        alt=""
+                        className="rounded-full w-full h-full object-cover"
+                      />
                     </div>
-                </div>
-            ))
-        }
-    </>
 
+                    <div>
+                      <p className="capitalize font-medium">{displayName}</p>
+                      <p>{formateDate(comment.createdAt)}</p>
+                    </div>
+                  </div>
+                </Link>
+
+                {comment.user._id === userId || userId === creatorId ? (
+                  currentPopup === comment._id ? (
+                    <div className="bg-gray-200 w-[70px] rounded-lg">
+                      <i
+                        onClick={() =>
+                          setCurrentPopup((prev) =>
+                            prev === comment._id ? null : comment._id
+                          )
+                        }
+                        className="fi fi-br-cross relative left-12 text-sm mt-1 cursor-pointer"
+                      ></i>
+
+                      {comment.user._id === userId && (
+                        <p
+                          className="p-2 py-1 hover:bg-blue-300"
+                          onClick={() => {
+                            setCurrentEditComment(comment._id);
+                            setCurrentPopup(null);
+                          }}
+                        >
+                          Edit
+                        </p>
+                      )}
+
+                      <p
+                        className="p-2 py-1 hover:bg-red-300"
+                        onClick={() => {
+                          handleCommentDelete(comment._id);
+                          setCurrentPopup(null);
+                        }}
+                      >
+                        Delete
+                      </p>
+                    </div>
+                  ) : (
+                    <i
+                      className="fi fi-bs-menu-dots cursor-pointer"
+                      onClick={() => setCurrentPopup(comment._id)}
+                    ></i>
+                  )
+                ) : null}
+              </div>
+
+              <p className="font-medium text-lg">{comment.comment}</p>
+
+              <div className="flex justify-between">
+                <div className="flex gap-4">
+                  <div className="cursor-pointer flex gap-2">
+                    {comment.likes.includes(userId) ? (
+                      <i
+                        onClick={() => handleCommentLike(comment._id)}
+                        className="fi fi-sr-thumbs-up text-blue-600 text-lg mt-1"
+                      ></i>
+                    ) : (
+                      <i
+                        onClick={() => handleCommentLike(comment._id)}
+                        className="fi fi-rr-social-network text-xl mt-1"
+                      ></i>
+                    )}
+                    <p className="text-lg">{comment.likes.length}</p>
+                  </div>
+
+                  <div className="flex gap-2 cursor-pointer">
+                    <i className="fi fi-sr-comment-alt text-lg mt-1"></i>
+                    <p className="text-lg">
+                      replies({comment.replies?.length || 0})
+                    </p>
+                  </div>
+                </div>
+
+                <p
+                  onClick={() => setActieReply(comment._id)}
+                  className="text-lg hover:underline cursor-pointer"
+                >
+                  reply
+                </p>
+              </div>
+
+              {activeReply === comment._id && (
+                <div className="my-4">
+                  <textarea
+                    type="text"
+                    placeholder="Reply..."
+                    className="h-[150px] resize-none drop-shadow w-full p-3 text-lg focus:outline-none"
+                    onChange={(e) => setReply(e.target.value)}
+                  />
+                  <button
+                    onClick={() => handleReply(comment._id)}
+                    className="bg-green-500 px-7 py-3 my-2"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
+
+              {comment.replies.length > 0 && (
+                <div className="pl-6 border-l">
+                  <DisplayComments
+                    comments={comment.replies}
+                    userId={userId}
+                    blogId={blogId}
+                    token={token}
+                    activeReply={activeReply}
+                    setActieReply={setActieReply}
+                    currentPopup={currentPopup}
+                    setCurrentPopup={setCurrentPopup}
+                    currentEditComment={currentEditComment}
+                    setCurrentEditComment={setCurrentEditComment}
+                    creatorId={creatorId}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
 }
 export default Comment;
