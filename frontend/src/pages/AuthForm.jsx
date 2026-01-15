@@ -42,7 +42,26 @@ function AuthForm({ type }) {
         }
     }
     async function handleGoogleAuth() {
-            googleAuth();
+        try {
+            let userData = await googleAuth();
+            if (!userData) {
+                return;
+            }
+            const idToken = await userData.getIdToken();
+            const res = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
+                { accessToken: idToken },
+                { withCredentials: true }
+            );
+            dispatch(login(res.data.user))
+            toast.success(res.data.message)
+            const redirectTo =
+                new URLSearchParams(location.search).get("redirect") || "/home";
+            navigate(redirectTo);
+        } catch (error) {
+            console.error("Google Auth Error:", error);
+            toast.error(error.response?.data?.message || "Authentication failed");
+        }
     }
 
     return (

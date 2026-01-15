@@ -1,30 +1,39 @@
 import { initializeApp } from "firebase/app";
 import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithRedirect,
+    getAuth, GoogleAuthProvider,signInWithPopup, signInWithRedirect
 } from "firebase/auth";
 import toast from "react-hot-toast";
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_APIKEY,
-  authDomain: import.meta.env.VITE_AUTHDOMAIN,
-  projectId: import.meta.env.VITE_PROJECTID,
-  storageBucket: import.meta.env.VITE_STORAGEBUCKET,
-  messagingSenderId: import.meta.env.VITE_MESSAGINGSENDERID,
-  appId: import.meta.env.VITE_APPID,
+    apiKey: import.meta.env.VITE_APIKEY,
+    authDomain: import.meta.env.VITE_AUTHDOMAIN,
+    projectId: import.meta.env.VITE_PROJECTID,
+    storageBucket: import.meta.env.VITE_STORAGEBUCKET,
+    messagingSenderId: import.meta.env.VITE_MESSAGINGSENDERID,
+    appId: import.meta.env.VITE_APPID,
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-
 const provider = new GoogleAuthProvider();
+
+// Detect mobile safely
+const isMobile = /Android|iPhone|iPad|iPod/i.test(
+  navigator.userAgent || navigator.vendor || window.opera
+);
 
 export async function googleAuth() {
   try {
-    await signInWithRedirect(auth, provider);
+    if (isMobile) {
+      await signInWithRedirect(auth, provider);
+      return null;
+    } else {
+      const result = await signInWithPopup(auth, provider);
+      return result.user;
+    }
   } catch (error) {
     console.error("Authentication error:", error);
-    toast.error("Authentication failed");
+    toast.error("Please try again later");
+    return null;
   }
 }
