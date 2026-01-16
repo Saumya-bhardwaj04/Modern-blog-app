@@ -6,7 +6,7 @@ import { useDispatch } from "react-redux";
 import { login } from "../utils/userSlice";
 import Input from "../components/Input";
 import googleIcon from "../assets/google-icon-logo-svgrepo-com.svg";
-import { googleAuth, getGoogleRedirectUser } from "../utils/firebase";
+import { googleAuth, handleRedirectResult } from "../utils/firebase";
 
 function AuthForm({ type }) {
     const [userData, setUserData] = useState({
@@ -69,7 +69,7 @@ function AuthForm({ type }) {
     }
     useEffect(() => {
         async function handleRedirect() {
-            const user = await getGoogleRedirectUser();
+            const user = await handleRedirectResult();
             if (!user) return;
             if (handled.current) return;
             handled.current = true;
