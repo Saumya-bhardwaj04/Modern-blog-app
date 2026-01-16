@@ -11,7 +11,7 @@ import { auth } from "../utils/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
 function AuthForm({ type }) {
-  const [formData, setFormData] = useState({
+  const [userData, setUserData] = useState({
     name: "",
     email: "",
     password: "",
@@ -27,7 +27,7 @@ function AuthForm({ type }) {
     try {
       const res = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/${type}`,
-        formData
+        userData
       );
 
       if (type === "signup") {
@@ -44,7 +44,7 @@ function AuthForm({ type }) {
     } catch (error) {
       toast.error(error.response?.data?.message || "Something went wrong");
     } finally {
-      setFormData({ name: "", email: "", password: "" });
+      setUserData({ name: "", email: "", password: "" });
     }
   }
   async function handleGoogleAuth() {
@@ -95,22 +95,22 @@ function AuthForm({ type }) {
                     {type == "signup" && (
                         <Input type={"text"}
                             placeholder={"Enter your name"}
-                            setUserData={setUserData}
                             field={"name"}
                             value={userData.name}
+                            setUserData={setUserData}
                             icon={"fi-sr-user"} />
                     )}
                     <Input type={"email"}
                         placeholder={"Enter your email"}
-                        setUserData={setUserData}
                         field={"email"}
                         value={userData.email}
+                        setUserData={setUserData}
                         icon={"fi-sr-envelope"} />
                     <Input type={"password"}
                         placeholder={"Enter your password"}
-                        setUserData={setUserData}
                         field={"password"}
                         value={userData.password}
+                        setUserData={setUserData}
                         icon={"fi-sr-lock"} />
                     <button
                         className="w-[100px] h-[50px] text-white text-xl p-2 rounded-md focus:outline-none bg-gray-900" >
