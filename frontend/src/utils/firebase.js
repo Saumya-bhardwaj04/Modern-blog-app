@@ -17,18 +17,11 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// Detect mobile safely
-const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 export async function googleAuth() {
     try {
-      if (false) {
-      await signInWithRedirect(auth, provider);
-      return result.user; 
-    } else {
       const result = await signInWithPopup(auth, provider);
       return result.user;
-    }
     } catch (error) {
         console.error("Authentication error:", error);
         toast.error("Please try again later");

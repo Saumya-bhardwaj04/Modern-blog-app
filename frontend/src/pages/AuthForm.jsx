@@ -65,8 +65,6 @@ function AuthForm({ type }) {
             navigate(redirectTo);
         } catch (error) {
             toast.error("Google authentication failed");
-        } finally {
-            toast.error("Google authentication failed");
         }
     }
     useEffect(() => {
@@ -91,8 +89,6 @@ function AuthForm({ type }) {
                 navigate(redirectTo, { replace: true });
             } catch (error) {
                 toast.error("Authentication failed");
-            } finally {
-                toast.error("Google authentication failed");
             }
         }
         handleRedirect();
