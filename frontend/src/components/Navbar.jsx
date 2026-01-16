@@ -22,6 +22,7 @@ function Navbar() {
     async function handleLogout() {
         await signOut(auth);
         dispatch(logout())
+        localStorage.removeItem("token");
         setShowPopup(false);
         toast.success("Logged out successfully");
         navigate("/")

@@ -61,9 +61,12 @@ function AuthForm({ type }) {
     }
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (!user) return;
+            const reduxToken = localStorage.getItem("token");
+            if (reduxToken && !location.pathname.includes("signin") && !location.pathname.includes("signup")) {
+                return;
+            }
             if (authHandled.current) return;
-            const hasToken = localStorage.getItem("token");
-            if (hasToken) return;
 
             authHandled.current = true;
 
@@ -89,7 +92,7 @@ function AuthForm({ type }) {
         });
 
         return () => unsubscribe();
-    }, [dispatch, navigate, location.search]);
+    }, [dispatch, navigate, location.pathname, location.search]);
 
 
     return (

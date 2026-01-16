@@ -14,15 +14,43 @@ const userSlice = createSlice({
     },
     reducers: {
         login(state, action) {
-            localStorage.setItem("user", JSON.stringify({ followers: [], following: [], ...action.payload }));
-            return { followers: [], following: [], ...action.payload };
-        },
+            const user = {
+                followers: [],
+                following: [],
+                ...action.payload,
+            };
+            localStorage.setItem("user", JSON.stringify(user));
+            if (user.token) {
+                localStorage.setItem("token", user.token);
+            }
+            state.id = user.id;
+            state.name = user.name;
+            state.email = user.email;
+            state.profilePic = user.profilePic;
+            state.username = user.username;
+            state.bio = user.bio;
+            state.followers = user.followers || [];
+            state.following = user.following || [];
+            state.token = user.token;
+        }
+        ,
         logout(state, action) {
             localStorage.removeItem("user");
+            localStorage.removeItem("token");
+
             return {
+                id: null,
+                name: null,
+                email: null,
+                profilePic: null,
+                username: null,
+                bio: null,
+                followers: [],
+                following: [],
                 token: null,
-            }
-        },
+            };
+        }
+        ,
         updateData(state, action) {
             const data = action.payload;
             if (data[0] === "visibility") {
