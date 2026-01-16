@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useLocation, useParams } from "react-router-dom"
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
 import { addSelectedBlog, changeLikes, removeSelectedBlog } from "../utils/selectedBlogSlice";
 import Comment from "../components/Comment";
 import { setIsOpen } from "../utils/commentSlice";
@@ -40,7 +40,7 @@ export async function handleFollowCreator(id, token, dispatch) {
 function BlogPage() {
     const { id } = useParams();
     const dispatch = useDispatch();
-    const location = useLocation();
+    const navigate = useNavigate();
     const [isBlogSaved, setIsBlogSaved] = useState(false);
     const { token, email, id: userId, profilePic, following } = useSelector((state) => state.user);
     const { likes, comments, content, creator } = useSelector((state) => state.selectedBlog);
@@ -75,6 +75,28 @@ function BlogPage() {
 
         } else {
             return toast.error("Please signin to like this blog")
+        }
+    }
+    async function handleDeleteBlog() {
+        const confirmDelete = window.confirm(
+            "Are you sure you want to delete this blog?\nThis action cannot be undone."
+        );
+
+        if (!confirmDelete) return;
+
+        try {
+            const res = await axios.delete(
+                `${import.meta.env.VITE_BACKEND_URL}/blogs/${blogData._id}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            toast.success(res.data.message);
+            navigate("/home"); 
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Delete failed");
         }
     }
     useEffect(() => {
@@ -122,13 +144,21 @@ function BlogPage() {
                         </div>
                     </div>
                     <img src={blogData.image} alt="" />
-                    {
-                        token && email === blogData.creator.email && (<Link to={"/edit/" + blogData.blogId}>
-                            <button className="bg-green-400 mt-5 px-6 py-2 text-xl rounded">
-                                Edit
+                    {token && email === blogData.creator.email && (
+                        <div className="flex gap-3 mt-5">
+                            <Link to={"/edit/" + blogData.blogId}>
+                                <button className="bg-green-400 px-6 py-2 text-xl rounded">
+                                    Edit
+                                </button>
+                            </Link>
+                            <button
+                                onClick={handleDeleteBlog}
+                                className="bg-red-500 px-6 py-2 text-xl rounded text-white"
+                            >
+                                Delete
                             </button>
-                        </Link>)
-                    }
+                        </div>
+                    )}
                     <div className="flex gap-7 mt-4">
                         <div className="cursor-pointer flex gap-2" >
                             {isLike ? (
@@ -183,9 +213,6 @@ function BlogPage() {
                                     return <p key={index}
                                         className="my-4" dangerouslySetInnerHTML={{ __html: block.data.text }}></p>
                                 } else if (block.type == "image") {
-                                    if (block.type === "image" && block.data.caption) {
-                                        text += block.data.caption + " ";
-                                    }
                                     return (
                                         <div className="my-4" key={index}
                                         >

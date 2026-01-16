@@ -211,13 +211,13 @@ async function deleteBlog(req, res) {
         const { id } = req.params;
         const blog = await Blog.findById(id);
         if (!blog) {
-            return res.status(200).json({
+            return res.status(404).json({
                 success: false,
                 message: "Blog not found",
             })
         }
-        if ((creator != blog.creator)) {
-            return res.status(500).json({
+        if (blog.creator.toString() !== creator.toString()) {
+            return res.status(403).json({
                 message: "You are not authorized to delete this blog",
             })
         }
@@ -230,7 +230,8 @@ async function deleteBlog(req, res) {
             blog,
         })
     }
-    catch (err) {
+    catch (error) {
+        console.error(error);
         return res.status(500).json({
             success: false,
             message: "Please try again"

@@ -11,7 +11,6 @@ import SearchBlogs from "./components/SearchBlogs";
 import Setting from "./components/Setting";
 import StartPage from "./pages/StartPage";
 
-
 function App() {
 
   return (
