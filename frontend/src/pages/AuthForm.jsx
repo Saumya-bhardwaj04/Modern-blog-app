@@ -48,22 +48,24 @@ function AuthForm({ type }) {
     }
     async function handleGoogleAuth() {
         try {
-        const user = await googleAuth();
-        if (!user) return; 
+            const user = await googleAuth();
+            if (!user) return;
 
-        const idToken = await user.getIdToken();
-        const res = await axios.post(
-            `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
-            { accessToken: idToken }
-        );
+            const idToken = await user.getIdToken();
+            const res = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
+                { accessToken: idToken }
+            );
 
-        dispatch(login(res.data.user));
-        toast.success(res.data.message);
+            dispatch(login(res.data.user));
+            toast.success(res.data.message);
 
-        const redirectTo =
-            new URLSearchParams(location.search).get("redirect") || "/home";
-        navigate(redirectTo);
-    } catch {
+            const redirectTo =
+                new URLSearchParams(location.search).get("redirect") || "/home";
+            navigate(redirectTo);
+        } catch (error) {
+            toast.error("Google authentication failed");
+        } finally {
             toast.error("Google authentication failed");
         }
     }
@@ -87,8 +89,10 @@ function AuthForm({ type }) {
                     new URLSearchParams(location.search).get("redirect") || "/home";
 
                 navigate(redirectTo, { replace: true });
-            } catch {
+            } catch (error) {
                 toast.error("Authentication failed");
+            } finally {
+                toast.error("Google authentication failed");
             }
         }
 
