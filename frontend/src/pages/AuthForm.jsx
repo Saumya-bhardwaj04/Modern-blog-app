@@ -11,79 +11,85 @@ import { auth } from "../utils/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 
 function AuthForm({ type }) {
-  const [userData, setUserData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
-
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const location = useLocation();
-  const authHandled = useRef(false);
-  async function handleAuthForm(e) {
-    e.preventDefault();
-
-    try {
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/${type}`,
-        userData
-      );
-
-      if (type === "signup") {
-        toast.success(res.data.message);
-        navigate("/signin");
-      } else {
-        dispatch(login(res.data.user));
-        toast.success(res.data.message);
-
-        const redirectTo =
-          new URLSearchParams(location.search).get("redirect") || "/home";
-        navigate(redirectTo);
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Something went wrong");
-    } finally {
-      setUserData({ name: "", email: "", password: "" });
-    }
-  }
-  async function handleGoogleAuth() {
-    try {
-      await googleAuth();
-    } catch (error) {
-      console.error("Google auth error:", error);
-      toast.error("Google authentication failed");
-    }
-  }
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user || authHandled.current) return;
-
-      authHandled.current = true;
-
-      try {
-        const idToken = await user.getIdToken();
-
-        const res = await axios.post(
-          `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
-          { accessToken: idToken }
-        );
-
-        dispatch(login(res.data.user));
-        toast.success(res.data.message);
-
-        const redirectTo =
-          new URLSearchParams(location.search).get("redirect") || "/home";
-
-        navigate(redirectTo, { replace: true });
-      } catch (error) {
-        console.error("Google redirect error:", error);
-        toast.error("Authentication failed");
-      }
+    const [userData, setUserData] = useState({
+        name: "",
+        email: "",
+        password: "",
     });
 
-    return () => unsubscribe();
-  }, [dispatch, navigate, location.search]);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const authHandled = useRef(false);
+    const [loading, setLoading] = useState(false);
+    async function handleAuthForm(e) {
+        e.preventDefault();
+
+        try {
+            const res = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/${type}`,
+                userData
+            );
+
+            if (type === "signup") {
+                toast.success(res.data.message);
+                navigate("/signin");
+            } else {
+                dispatch(login(res.data.user));
+                toast.success(res.data.message);
+
+                const redirectTo =
+                    new URLSearchParams(location.search).get("redirect") || "/home";
+                navigate(redirectTo);
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Something went wrong");
+        } finally {
+            setUserData({ name: "", email: "", password: "" });
+        }
+    }
+    async function handleGoogleAuth() {
+        if (loading) return;
+        setLoading(true);
+        try {
+            await googleAuth();
+        } catch {
+            toast.error("Google authentication failed");
+        } finally {
+            setLoading(false);
+        }
+    }
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (authHandled.current) return;
+            const hasToken = localStorage.getItem("token");
+            if (hasToken) return;
+
+            authHandled.current = true;
+
+            try {
+                const idToken = await user.getIdToken();
+
+                const res = await axios.post(
+                    `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
+                    { accessToken: idToken }
+                );
+
+                dispatch(login(res.data.user));
+                toast.success(res.data.message);
+
+                const redirectTo =
+                    new URLSearchParams(location.search).get("redirect") || "/home";
+
+                navigate(redirectTo, { replace: true });
+            } catch (error) {
+                console.error("Google redirect error:", error);
+                toast.error("Authentication failed");
+            }
+        });
+
+        return () => unsubscribe();
+    }, [dispatch, navigate, location.search]);
 
 
     return (

@@ -4,6 +4,9 @@ import logo from "../../public/logo.jpg"
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../utils/userSlice.js";
 import toast from "react-hot-toast";
+import { signOut } from "firebase/auth";
+import { auth } from "../utils/firebase.js";
+
 
 function Navbar() {
     const { token, name, profilePic, username } = useSelector((state) => state.user);
@@ -16,7 +19,8 @@ function Navbar() {
     const isAuthPage = location.pathname === "/signin" || location.pathname === "/signup";
 
     const dispatch = useDispatch()
-    function handleLogout() {
+    async function handleLogout() {
+        await signOut(auth);
         dispatch(logout())
         setShowPopup(false);
         toast.success("Logged out successfully");
