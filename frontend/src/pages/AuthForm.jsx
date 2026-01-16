@@ -42,7 +42,7 @@ function AuthForm({ type }) {
     }
     async function handleGoogleAuth() {
         try {
-            let userData = await googleAuth();
+            const userData = await googleAuth();
             if (!userData) {
                 return;
             }
@@ -55,38 +55,46 @@ function AuthForm({ type }) {
             toast.success(res.data.message)
             const redirectTo =
                 new URLSearchParams(location.search).get("redirect") || "/home";
-            navigate(redirectTo);
+            navigate(redirectTo, { replace: true });
         } catch (error) {
             console.error("Google Auth Error:", error);
             toast.error(error.response?.data?.message || "Authentication failed");
         }
     }
     useEffect(() => {
-        // Import the handleRedirectResult from your firebase utils
+        let ran = false;
+
         const handleRedirect = async () => {
+            if (ran) return;
+            ran = true;
+
             try {
                 const userData = await handleRedirectResult();
-                if (userData) {
-                    const idToken = await userData.getIdToken();
-                    const res = await axios.post(
-                        `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
-                        {
-                            accessToken: idToken,
-                        }
-                    );
-                    dispatch(login(res.data.user));
-                    toast.success(res.data.message);
-                    const redirectTo =
-                        new URLSearchParams(location.search).get("redirect") || "/home";
-                    navigate(redirectTo);
-                }
+                if (!userData) return;
+
+                const idToken = await userData.getIdToken();
+
+                const res = await axios.post(
+                    `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
+                    { accessToken: idToken }
+                );
+
+                dispatch(login(res.data.user));
+                toast.success(res.data.message);
+
+                const redirectTo =
+                    new URLSearchParams(location.search).get("redirect") || "/home";
+
+                navigate(redirectTo, { replace: true });
             } catch (error) {
                 console.error("Redirect Error:", error);
                 toast.error("Authentication failed");
             }
         };
+
         handleRedirect();
-    }, [dispatch, navigate]);
+    }, [dispatch, navigate, location.search]);
+
 
     return (
         <div className="w-full h-[calc(100vh_-_100px)] flex items-center p-4 justify-center">
