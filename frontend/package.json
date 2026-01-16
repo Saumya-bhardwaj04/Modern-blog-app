@@ -24,6 +24,7 @@
     "@editorjs/text-variant-tune": "^1.0.3",
     "@editorjs/underline": "^1.2.1",
     "@flaticon/flaticon-uicons": "^3.3.1",
+    "@react-oauth/google": "^0.13.4",
     "@reduxjs/toolkit": "^2.10.1",
     "axios": "^1.13.2",
     "firebase": "^12.6.0",
