@@ -6,9 +6,7 @@ import { useDispatch } from "react-redux";
 import { login } from "../utils/userSlice";
 import Input from "../components/Input";
 import googleIcon from "../assets/google-icon-logo-svgrepo-com.svg";
-import { googleAuth } from "../utils/firebase";
-import { auth } from "../utils/firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { googleAuth, getGoogleRedirectUser } from "../utils/firebase";
 
 function AuthForm({ type }) {
     const [userData, setUserData] = useState({
@@ -20,8 +18,8 @@ function AuthForm({ type }) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
-    const authHandled = useRef(false);
-    const [loading, setLoading] = useState(false);
+    const handled = useRef(false);
+
     async function handleAuthForm(e) {
         e.preventDefault();
 
@@ -49,30 +47,34 @@ function AuthForm({ type }) {
         }
     }
     async function handleGoogleAuth() {
-        if (loading) return;
-        setLoading(true);
         try {
-            await googleAuth();
-        } catch {
+        const user = await googleAuth();
+        if (!user) return; 
+
+        const idToken = await user.getIdToken();
+        const res = await axios.post(
+            `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
+            { accessToken: idToken }
+        );
+
+        dispatch(login(res.data.user));
+        toast.success(res.data.message);
+
+        const redirectTo =
+            new URLSearchParams(location.search).get("redirect") || "/home";
+        navigate(redirectTo);
+    } catch {
             toast.error("Google authentication failed");
-        } finally {
-            setLoading(false);
         }
     }
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        async function handleRedirect() {
+            const user = await getGoogleRedirectUser();
             if (!user) return;
-            const reduxToken = localStorage.getItem("token");
-            if (reduxToken && !location.pathname.includes("signin") && !location.pathname.includes("signup")) {
-                return;
-            }
-            if (authHandled.current) return;
-
-            authHandled.current = true;
-
+            if (handled.current) return;
+            handled.current = true;
             try {
                 const idToken = await user.getIdToken();
-
                 const res = await axios.post(
                     `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
                     { accessToken: idToken }
@@ -85,14 +87,13 @@ function AuthForm({ type }) {
                     new URLSearchParams(location.search).get("redirect") || "/home";
 
                 navigate(redirectTo, { replace: true });
-            } catch (error) {
-                console.error("Google redirect error:", error);
+            } catch {
                 toast.error("Authentication failed");
             }
-        });
+        }
 
-        return () => unsubscribe();
-    }, [dispatch, navigate, location.pathname, location.search]);
+        handleRedirect();
+    }, [dispatch, navigate, location.search]);
 
 
     return (
