@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
@@ -6,94 +6,84 @@ import { useDispatch } from "react-redux";
 import { login } from "../utils/userSlice";
 import Input from "../components/Input";
 import googleIcon from "../assets/google-icon-logo-svgrepo-com.svg";
-import { googleAuth, handleRedirectResult } from "../utils/firebase";
+import { googleAuth } from "../utils/firebase";
+import { auth } from "../utils/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 function AuthForm({ type }) {
-    const [userData, setUserData] = useState({ name: "", email: "", password: "", })
-    const dispatch = useDispatch()
-    const navigate = useNavigate();
-    const location = useLocation();
-    async function handleAuthForm(e) {
-        e.preventDefault();
-        try {
-            const res = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/${type}`,
-                userData
-            );
-            if (type == "signup") {
-                toast.success(res.data.message)
-                navigate("/signin")
-            } else {
-                dispatch(login(res.data.user))
-                toast.success(res.data.message)
-                const redirectTo =
-                    new URLSearchParams(location.search).get("redirect") || "/home";
-                navigate(redirectTo);
-            }
-        } catch (error) {
-            if (error.response?.data?.message === "This email is already registered") {
-                toast.error("Account created using Google. Please sign in using Google.");
-                return;
-            }
-            toast.error(error.response?.data?.message || "Something went wrong");
-        } finally {
-            setUserData({ name: "", email: "", password: "", });
-        }
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const authHandled = useRef(false);
+  async function handleAuthForm(e) {
+    e.preventDefault();
+
+    try {
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/${type}`,
+        formData
+      );
+
+      if (type === "signup") {
+        toast.success(res.data.message);
+        navigate("/signin");
+      } else {
+        dispatch(login(res.data.user));
+        toast.success(res.data.message);
+
+        const redirectTo =
+          new URLSearchParams(location.search).get("redirect") || "/home";
+        navigate(redirectTo);
+      }
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Something went wrong");
+    } finally {
+      setFormData({ name: "", email: "", password: "" });
     }
-    async function handleGoogleAuth() {
-        try {
-            const userData = await googleAuth();
-            if (!userData) {
-                return;
-            }
-            const idToken = await userData.getIdToken();
-            const res = await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
-                { accessToken: idToken },
-            );
-            dispatch(login(res.data.user))
-            toast.success(res.data.message)
-            const redirectTo =
-                new URLSearchParams(location.search).get("redirect") || "/home";
-            navigate(redirectTo, { replace: true });
-        } catch (error) {
-            console.error("Google Auth Error:", error);
-            toast.error(error.response?.data?.message || "Authentication failed");
-        }
+  }
+  async function handleGoogleAuth() {
+    try {
+      await googleAuth();
+    } catch (error) {
+      console.error("Google auth error:", error);
+      toast.error("Google authentication failed");
     }
-    useEffect(() => {
-        let ran = false;
+  }
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user || authHandled.current) return;
 
-        const handleRedirect = async () => {
-            if (ran) return;
-            ran = true;
+      authHandled.current = true;
 
-            try {
-                const userData = await handleRedirectResult();
-                if (!userData) return;
+      try {
+        const idToken = await user.getIdToken();
 
-                const idToken = await userData.getIdToken();
+        const res = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
+          { accessToken: idToken }
+        );
 
-                const res = await axios.post(
-                    `${import.meta.env.VITE_BACKEND_URL}/google-auth`,
-                    { accessToken: idToken }
-                );
+        dispatch(login(res.data.user));
+        toast.success(res.data.message);
 
-                dispatch(login(res.data.user));
-                toast.success(res.data.message);
+        const redirectTo =
+          new URLSearchParams(location.search).get("redirect") || "/home";
 
-                const redirectTo =
-                    new URLSearchParams(location.search).get("redirect") || "/home";
+        navigate(redirectTo, { replace: true });
+      } catch (error) {
+        console.error("Google redirect error:", error);
+        toast.error("Authentication failed");
+      }
+    });
 
-                navigate(redirectTo, { replace: true });
-            } catch (error) {
-                console.error("Redirect Error:", error);
-                toast.error("Authentication failed");
-            }
-        };
-
-        handleRedirect();
-    }, [dispatch, navigate, location.search]);
+    return () => unsubscribe();
+  }, [dispatch, navigate, location.search]);
 
 
     return (
