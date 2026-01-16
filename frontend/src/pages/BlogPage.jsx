@@ -94,7 +94,7 @@ function BlogPage() {
                 }
             );
             toast.success(res.data.message);
-            navigate("/home"); 
+            navigate(-1, { replace: true });
         } catch (error) {
             toast.error(error.response?.data?.message || "Delete failed");
         }
