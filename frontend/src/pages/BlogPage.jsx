@@ -8,6 +8,7 @@ import Comment from "../components/Comment";
 import { setIsOpen } from "../utils/commentSlice";
 import formateDate from "../utils/formateDate";
 import { updateData } from "../utils/userSlice";
+import calculateReadTime from "../components/TimeCalculate";
 
 export async function handleSaveBlogs(id, token, dispatch) {
     try {
@@ -45,6 +46,7 @@ function BlogPage() {
     const { likes, comments, content, creator } = useSelector((state) => state.selectedBlog);
     const { isOpen } = useSelector((state) => state.comment);
     const [blogData, setBlogData] = useState(null)
+    const readTime = calculateReadTime(blogData?.content);
     const [isLike, setIsLike] = useState(false)
     async function fetchBlogById() {
         try {
@@ -114,7 +116,7 @@ function BlogPage() {
                                 )}
                             </div>
                             <div>
-                                <span>6 min read</span>
+                                <span>{readTime} min read</span>
                                 <span className="mx-2">{formateDate(blogData.createdAt)}</span>
                             </div>
                         </div>
@@ -181,6 +183,9 @@ function BlogPage() {
                                     return <p key={index}
                                         className="my-4" dangerouslySetInnerHTML={{ __html: block.data.text }}></p>
                                 } else if (block.type == "image") {
+                                    if (block.type === "image" && block.data.caption) {
+                                        text += block.data.caption + " ";
+                                    }
                                     return (
                                         <div className="my-4" key={index}
                                         >
@@ -188,7 +193,7 @@ function BlogPage() {
                                             <p className="text-center my-2">{block.data.caption}</p>
                                         </div>
                                     )
-                                } else if (block.type == "List") {
+                                } else if (block.type == "list") {
                                     if (block.data.style == "ordered") {
                                         return (
                                             <ol key={index} className="list-decimal my-4">

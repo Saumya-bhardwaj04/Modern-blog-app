@@ -62,7 +62,7 @@ async function createUser(req, res) {
             if (checkForexistingUser.verify) {
                 return res.status(400).json({
                     success: false,
-                    message: "user already registered with this email"
+                    message: "user already registered with this email. try logging in",
                 })
             } else {
                 let verificationToken = await generateJWT({
@@ -189,7 +189,7 @@ async function googleAuth(req, res) {
             } else {
                 return res.status(400).json({
                     success: true,
-                    message: "This email is already registered try signing in!",
+                    message: "This email is already registered. try signing in!",
                 })
             }
 

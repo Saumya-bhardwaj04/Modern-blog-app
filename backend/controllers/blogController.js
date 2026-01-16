@@ -65,7 +65,6 @@ async function createBlog(req, res) {
     } catch (err) {
         return res.status(500).json({ message: err.message })
     }
-
 }
 async function getBlogs(req, res) {
     try {
