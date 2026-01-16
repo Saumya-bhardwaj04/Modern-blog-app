@@ -22,9 +22,9 @@ const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
 export async function googleAuth() {
     try {
-        if (isMobile) {
+      if (false) {
       await signInWithRedirect(auth, provider);
-      return null; 
+      return result.user; 
     } else {
       const result = await signInWithPopup(auth, provider);
       return result.user;

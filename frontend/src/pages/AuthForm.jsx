@@ -95,10 +95,8 @@ function AuthForm({ type }) {
                 toast.error("Google authentication failed");
             }
         }
-
         handleRedirect();
     }, [dispatch, navigate, location.search]);
-
 
     return (
         <div className="w-full h-[calc(100vh_-_100px)] flex items-center p-4 justify-center">
