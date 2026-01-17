@@ -473,7 +473,10 @@ async function deleteUser(req, res) {
         );
 
         await Comment.deleteMany({ user: id });
-
+        await Comment.updateMany(
+            {},
+            { $pull: { likes: id } }
+        );
         await Blog.updateMany(
             {},
             { $pull: { likes: id } }

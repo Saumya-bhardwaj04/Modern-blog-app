@@ -27,7 +27,7 @@ function Comment() {
                     },
                 }
             )
-            setComments("");
+            setComment("");
             dispatch(setComments(res.data.newComment));
             toast.success(res.data.message);
         } catch (error) {
@@ -73,7 +73,6 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                     },
                 }
             )
-
             setReply("");
             setActieReply(null);
             dispatch(setReplies(res.data.newReply));
