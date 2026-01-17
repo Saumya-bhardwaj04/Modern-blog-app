@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, useNavigate } from "react-router-dom";
-import { updateData } from "../utils/userSlice";
+import { logout, updateData } from "../utils/userSlice";
 
 function Setting() {
   const {
@@ -35,16 +35,41 @@ function Setting() {
       toast.success(res.data.message);
       navigate(-1);
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Update failed");
+    }
+  }
+  async function handleDeleteAccount() {
+    const confirmText = prompt(
+      "Type DELETE to permanently delete your account"
+    );
+    if (confirmText !== "DELETE") {
+      toast.error("Account deletion cancelled. try again.");
+      return;
+    }
+    try {
+      const res = await axios.delete(
+        `${import.meta.env.VITE_BACKEND_URL}/users/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      toast.success(res.data.message);
+      localStorage.clear();
+      dispatch(logout());
+      navigate("/", { replace: true });
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Delete failed");
     }
   }
 
   return token == null ? (
     <Navigate to={"/"} />
   ) : (
-    <div className="w-full p-5 md:w-[800px] flex flex-col items-center h-[calc(100vh_-_250px)] mx-auto justify-center">
+    <div className="pt-[70px] w-full p-5 md:w-[800px] flex flex-col items-center h-[calc(100vh_-_250px)] mx-auto justify-center">
       <div className="w-full">
-        <h1 className=" my-10 text-2xl font-semibold text-left">Settings</h1>
+        <h1 className=" my-10 text-2xl font-semibold ">Settings</h1>
       </div>
       <div className="my-4 w-full">
         <h2 className="text-2xl font-semibold my-2">Show Saved Blogs ?</h2>
@@ -88,6 +113,24 @@ function Setting() {
       >
         Update
       </button>
+      <hr className="my-10" />
+      <div className="border border-red-500 p-6 rounded-lg">
+        <h2 className="text-red-600 text-xl font-bold mb-3">
+          Danger Zone
+        </h2>
+        <p className="text-gray-700 mb-4">
+          Deleting your account will permanently remove:
+          <br />• Your profile
+          <br />• All blogs you created
+          <br />• Likes, followers & saved blogs
+        </p>
+        <button
+          onClick={handleDeleteAccount}
+          className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-md"
+        >
+          Delete Account
+        </button>
+      </div>
     </div>
   );
 }

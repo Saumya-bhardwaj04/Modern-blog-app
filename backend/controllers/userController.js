@@ -1,4 +1,5 @@
 const User = require("../models/userSchema");
+const Blog = require("../models/blogSchema");
 const bcrypt = require('bcrypt');
 const { generateJWT, verifyJWT } = require("../utils/generateToken");
 const sendEmail = require("../utils/sendEmail");
@@ -276,13 +277,13 @@ async function login(req, res) {
                 id: checkForexistingUser._id,
             })
             await sendEmail({
-                    to: checkForexistingUser.email,
-                    subject: "Verify your email",
-                    html: `
+                to: checkForexistingUser.email,
+                subject: "Verify your email",
+                html: `
                     <h2>Welcome to Meloque 🎉</h2>
                     <p>Click below to verify your email:</p>
                     <a href="${FRONTEND_URL}/verify-email/${verificationToken}">Verify Email </a>`,
-                });
+            });
             return res.status(400).json({
                 success: false,
                 message: "Please verify your email",
@@ -427,27 +428,69 @@ async function updateUser(req, res) {
 }
 async function deleteUser(req, res) {
     try {
-        const id = req.params.id;
-        const deletedUser = await User.findByIdAndDelete(id);
-        if (!deletedUser) {
-            return res.status(200).json({
+        const userId = req.user;
+        const { id } = req.params;
+
+        if (userId !== id) {
+            return res.status(403).json({
+                success: false,
+                message: "You are not authorized to delete this account",
+            });
+        }
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
                 success: false,
                 message: "User not found",
-            })
+            });
         }
+        if (user.profilePicId) {
+            await deleteImagefromCloudinary(user.profilePicId);
+        }
+        const blogs = await Blog.find({ creator: id });
+
+        for (const blog of blogs) {
+            if (blog.imageId) {
+                await deleteImagefromCloudinary(blog.imageId);
+            }
+        }
+
+        await Blog.deleteMany({ creator: id });
+
+        await Blog.updateMany(
+            {},
+            {
+                $pull: {
+                    likes: id,
+                    comments: { user: id },
+                    "comments.$[].replies": { user: id },
+                },
+            }
+        );
+        await User.updateMany(
+            {},
+            {
+                $pull: {
+                    followers: id,
+                    following: id,
+                },
+            }
+        );
+        await User.findByIdAndUpdate(id, { blogs: [] });
+        await User.findByIdAndDelete(id);
         return res.status(200).json({
             success: true,
-            message: "User deleted successfully",
-            deletedUser,
-        })
-    }
-    catch (error) {
+            message: "Account deleted successfully",
+        });
+
+    } catch (error) {
         return res.status(500).json({
             success: false,
-            message: "Please try again"
-        })
+            message: "Please try again",
+        });
     }
 }
+
 async function followUser(req, res) {
     try {
         const followerId = req.user;
