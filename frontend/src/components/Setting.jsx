@@ -67,7 +67,7 @@ function Setting() {
   return token == null ? (
     <Navigate to={"/"} />
   ) : (
-    <div className="pt-[50px] min-h-[calc(100vh-72px)] w-full p-5 md:w-[800px] mx-auto flex flex-col items-center md:justify-center ">
+    <div className="pt-[40px] min-h-[calc(100vh-72px)] w-full p-5 md:w-[800px] mx-auto flex flex-col items-center md:justify-center ">
       <div className="w-full">
         <h1 className="mb-8 text-2xl font-semibold text-center">Settings</h1>
       </div>
