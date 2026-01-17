@@ -1,5 +1,7 @@
 const User = require("../models/userSchema");
 const Blog = require("../models/blogSchema");
+const Comment = require("../models/commentSchema");
+const Like = require("../models/likeSchema");
 const bcrypt = require('bcrypt');
 const { generateJWT, verifyJWT } = require("../utils/generateToken");
 const sendEmail = require("../utils/sendEmail");
@@ -457,26 +459,39 @@ async function deleteUser(req, res) {
 
         await Blog.deleteMany({ creator: id });
 
+        const userComments = await Comment.find({ user: id }).select("_id");
+
+        const commentIds = userComments.map(c => c._id);
+
         await Blog.updateMany(
             {},
-            {
-                $pull: {
-                    likes: id,
-                    comments: { user: id },
-                    "comments.$[].replies": { user: id },
-                },
-            }
+            { $pull: { comments: { $in: commentIds } } }
         );
+
+        await Comment.updateMany(
+            {},
+            { $pull: { replies: { $in: commentIds } } }
+        );
+
+        await Comment.deleteMany({ user: id });
+
+        await Blog.updateMany(
+            {},
+            { $pull: { likes: id } }
+        );
+
+        await Like.deleteMany({ user: id });
         await User.updateMany(
             {},
             {
                 $pull: {
                     followers: id,
                     following: id,
+                    saveBlogs: { $in: blogs.map(b => b._id) },
+                    likeBlogs: { $in: blogs.map(b => b._id) },
                 },
             }
         );
-        await User.findByIdAndUpdate(id, { blogs: [] });
         await User.findByIdAndDelete(id);
         return res.status(200).json({
             success: true,
@@ -484,6 +499,7 @@ async function deleteUser(req, res) {
         });
 
     } catch (error) {
+        console.error("Delete user error:", error);
         return res.status(500).json({
             success: false,
             message: "Please try again",
