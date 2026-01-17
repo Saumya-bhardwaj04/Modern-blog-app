@@ -1,7 +1,6 @@
 const User = require("../models/userSchema");
 const Blog = require("../models/blogSchema");
 const Comment = require("../models/commentSchema");
-const Like = require("../models/likeSchema");
 const bcrypt = require('bcrypt');
 const { generateJWT, verifyJWT } = require("../utils/generateToken");
 const sendEmail = require("../utils/sendEmail");
@@ -305,10 +304,10 @@ async function login(req, res) {
                 profilePic: checkForexistingUser.profilePic,
                 username: checkForexistingUser.username,
                 bio: checkForexistingUser.bio,
-                showLikedBlogs: checkForexistingUser.showLikedBlogs,
-                showSavedBlogs: checkForexistingUser.showSavedBlogs,
-                followers: checkForexistingUser.followers,
-                following: checkForexistingUser.following,
+                followers: checkForexistingUser.followers || [],
+                following: checkForexistingUser.following || [],
+                showLikedBlogs: checkForexistingUser.showLikedBlogs ?? true,
+                showSavedBlogs: checkForexistingUser.showSavedBlogs ?? false,
                 token,
             },
         })
@@ -479,8 +478,6 @@ async function deleteUser(req, res) {
             {},
             { $pull: { likes: id } }
         );
-
-        await Like.deleteMany({ user: id });
         await User.updateMany(
             {},
             {
