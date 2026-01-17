@@ -511,6 +511,12 @@ async function followUser(req, res) {
     try {
         const followerId = req.user;
         const { id } = req.params;
+        if (followerId === id) {
+            return res.status(400).json({
+                success: false,
+                message: "You cannot follow yourself",
+            });
+        }
         const user = await User.findById(id);
         if (!user) {
             return res.status(404).json({
@@ -519,15 +525,17 @@ async function followUser(req, res) {
             })
         }
         if (!user.followers.includes(followerId)) {
-            await User.findByIdAndUpdate(id, { $set: { followers: followerId } });
-            await User.findByIdAndUpdate(followerId, { $set: { following: id } });
+            await User.findByIdAndUpdate(id, { $push: { followers: followerId } });
+            await User.findByIdAndUpdate(followerId, { $push: { following: id } });
+
             return res.status(200).json({
                 success: true,
                 message: "Followed",
             })
         } else {
-            await User.findByIdAndUpdate(id, { $unset: { followers: followerId } });
-            await User.findByIdAndUpdate(followerId, { $unset: { following: id } });
+            await User.findByIdAndUpdate(id, { $pull: { followers: followerId } });
+            await User.findByIdAndUpdate(followerId, { $pull: { following: id } });
+
             return res.status(200).json({
                 success: true,
                 message: "Unfollowed",

@@ -2,12 +2,11 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom"
+import { Link, useNavigate, useParams } from "react-router-dom"
 import { addSelectedBlog, changeLikes, removeSelectedBlog } from "../utils/selectedBlogSlice";
 import Comment from "../components/Comment";
 import { setIsOpen } from "../utils/commentSlice";
 import formateDate from "../utils/formateDate";
-import { updateData } from "../utils/userSlice";
 import calculateReadTime from "../components/TimeCalculate";
 
 export async function handleSaveBlogs(id, token, dispatch) {
@@ -31,10 +30,12 @@ export async function handleFollowCreator(id, token, dispatch) {
             },
         })
         toast.success(res.data.message);
-        dispatch(updateData(["followers", id]));
+        // dispatch(updateData(["followers", id]));
+        return true;
     }
     catch (error) {
         toast.error(error.response?.data?.message || "Something went wrong");
+        return false;
     }
 }
 function BlogPage() {

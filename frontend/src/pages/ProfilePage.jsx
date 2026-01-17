@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import { handleFollowCreator } from "./BlogPage";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import DisplayBlogs from "../components/DisplayBlogs";
 
 function ProfilePage() {
@@ -11,7 +11,6 @@ function ProfilePage() {
   const [userData, setUserData] = useState(null);
   const { token, id: userId, following } = useSelector((state) => state.user);
   const location = useLocation();
-  const dispatch = useDispatch();
 
   function renderComponent() {
     if (location.pathname === `/${username}`) {
@@ -161,18 +160,17 @@ function ProfilePage() {
               ) : (
                 <button
                   onClick={async () => {
-                    await handleFollowCreator(userData._id, token, dispatch);
-
-                    setUserData((prev) => ({
-                      ...prev,
-                      followers: prev.followers.some((f) => f._id === userId)
-                        ? prev.followers.filter((f) => f._id !== userId)
-                        : [...prev.followers, { _id: userId }],
-                    }));
+                    const success = await handleFollowCreator(userData._id, token);
+                    if (success) {
+                      const res = await axios.get(
+                        `${import.meta.env.VITE_BACKEND_URL}/users/${username.split("@")[1]}`
+                      );
+                      setUserData(res.data.user);
+                    }
                   }}
                   className="bg-green-600 px-7 py-3 rounded-full max-lg:w-full text-white my-3"
                 >
-                  {userData.followers.some((f) => f._id === userId)
+                  {blogData.creator.followers.includes(userId)
                     ? "Following"
                     : "Follow"}
                 </button>
