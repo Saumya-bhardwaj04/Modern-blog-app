@@ -67,9 +67,9 @@ function Setting() {
   return token == null ? (
     <Navigate to={"/"} />
   ) : (
-    <div className="pt-[70px] w-full p-5 md:w-[800px] mx-auto flex flex-col items-center sm:justify-start justify-center h-[calc(100vh_-_250px)] ">
+    <div className="pt-[72px] min-h-[calc(100vh-72px)] w-full p-5 md:w-[800px] mx-auto flex flex-col items-center md:justify-center ">
       <div className="w-full">
-        <h1 className=" my-10 text-2xl font-semibold ">Settings</h1>
+        <h1 className=" mt-4 mb-8 text-2xl font-semibold ">Settings</h1>
       </div>
       <div className="my-4 w-full">
         <h2 className="text-2xl font-semibold my-2">Show Saved Blogs ?</h2>
@@ -113,7 +113,7 @@ function Setting() {
       >
         Update
       </button>
-      <hr className="my-7 mb-2" />
+      <hr className="my-6" />
       <div className="border border-red-500 p-6 rounded-lg">
         <h2 className="text-red-600 text-xl font-bold mb-3">
           Danger Zone
