@@ -67,7 +67,7 @@ function Setting() {
   return token == null ? (
     <Navigate to={"/"} />
   ) : (
-    <div className="pt-[70px] w-full p-5 md:w-[800px] flex flex-col items-center h-[calc(100vh_-_250px)] mx-auto justify-center">
+    <div className="pt-[70px] w-full p-5 md:w-[800px] mx-auto flex flex-col items-center sm:justify-start justify-center h-[calc(100vh_-_250px)] ">
       <div className="w-full">
         <h1 className=" my-10 text-2xl font-semibold ">Settings</h1>
       </div>
@@ -113,7 +113,7 @@ function Setting() {
       >
         Update
       </button>
-      <hr className="my-10" />
+      <hr className="my-7 mb-2" />
       <div className="border border-red-500 p-6 rounded-lg">
         <h2 className="text-red-600 text-xl font-bold mb-3">
           Danger Zone
@@ -122,7 +122,7 @@ function Setting() {
           Deleting your account will permanently remove:
           <br />• Your profile
           <br />• All blogs you created
-          <br />• Likes, followers & saved blogs
+          <br />• Likes, followers & comments
         </p>
         <button
           onClick={handleDeleteAccount}
