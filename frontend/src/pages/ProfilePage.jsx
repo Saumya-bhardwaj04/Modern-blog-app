@@ -170,7 +170,7 @@ function ProfilePage() {
                   }}
                   className="bg-green-600 px-7 py-3 rounded-full max-lg:w-full text-white my-3"
                 >
-                  {blogData.creator.followers.includes(userId)
+                  {userData.followers.some((f) => f._id === userId)
                     ? "Following"
                     : "Follow"}
                 </button>

@@ -131,10 +131,19 @@ function BlogPage() {
                                     <h2 className="capitalize text-xl hover:underline cursor-pointer">{blogData.creator.name}</h2>
                                 </Link>
                                 {userId !== blogData.creator._id && (
-                                    <p onClick={() => handleFollowCreator(blogData.creator._id, token, dispatch)} className="text-xl my-2 font-medium text-blue-700 cursor-pointer">
-                                        {!following?.includes(creator?._id)
-                                            ? "follow"
-                                            : "following"}
+                                    <p
+                                        onClick={async () => {
+                                            const success = await handleFollowCreator(blogData.creator._id, token);
+                                            if (success) {
+                                                const { data } = await axios.get(
+                                                    `${import.meta.env.VITE_BACKEND_URL}/blogs/${id}`
+                                                );
+                                                setBlogData(data.blog);
+                                            }
+                                        }} className="text-xl my-2 font-medium text-blue-700 cursor-pointer">
+                                        {blogData?.creator?.followers?.includes(userId)
+                                            ? "following"
+                                            : "follow"}
                                     </p>
                                 )}
                             </div>
