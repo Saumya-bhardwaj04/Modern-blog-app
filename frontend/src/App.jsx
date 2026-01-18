@@ -14,11 +14,6 @@ import Setting from "./components/Setting";
 import StartPage from "./pages/StartPage";
 
 function App() {
-  // WARM UP BACKEND
-  useEffect(() => {
-    axios.get(import.meta.env.VITE_BACKEND_URL + "/ping")
-      .catch(() => { }); 
-  }, []);
   return (
     <Routes>
       <Route path="/" element={<Navbar />}>
