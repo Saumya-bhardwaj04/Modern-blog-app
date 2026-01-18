@@ -79,12 +79,10 @@ function Navbar() {
                 </div>
 
                 <div className="flex gap-5 justify-center items-center">
-                    {!isAuthPage && (
                         <i
                             className="fi fi-rr-search text-xl sm:hidden cursor-pointer"
                             onClick={() => setShowSearchBar((prev) => !prev)}
                         ></i>
-                    )}
                     <Link
                         to={token ? "/add-blog" : "/signin?redirect=/add-blog"}
                     >                        <div className=" flex gap-2 items-center">
