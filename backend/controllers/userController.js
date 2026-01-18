@@ -161,7 +161,12 @@ async function googleAuth(req, res) {
                 message: "Access token missing",
             });
         }
-        const response = await getAuth().verifyIdToken(accessToken);
+        const response = await Promise.race([
+            getAuth().verifyIdToken(accessToken),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Firebase timeout")), 8000)
+            )
+        ]);
         const { name, email } = response;
         let user = await User.findOne({ email });
         if (user) {

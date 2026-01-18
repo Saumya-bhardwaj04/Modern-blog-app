@@ -1,4 +1,6 @@
-import { Routes, Route  } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import axios from "axios";
 import AuthForm from "./pages/AuthForm";
 import Navbar from "./components/Navbar";
 import HomePage from "./components/HomePage";
@@ -12,7 +14,11 @@ import Setting from "./components/Setting";
 import StartPage from "./pages/StartPage";
 
 function App() {
-
+  // WARM UP BACKEND
+  useEffect(() => {
+    axios.get(import.meta.env.VITE_BACKEND_URL + "/ping")
+      .catch(() => { }); 
+  }, []);
   return (
     <Routes>
       <Route path="/" element={<Navbar />}>

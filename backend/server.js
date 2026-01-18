@@ -33,6 +33,10 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => {
     res.send("Backend is running");
 });
+// (health check / warm-up)
+app.get("/ping", (req, res) => {
+    res.send("ok");
+});
 app.use("/api/v1", userRoute);
 app.use("/api/v1", blogRoute);
 

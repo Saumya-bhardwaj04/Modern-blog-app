@@ -14,15 +14,17 @@ function AuthForm({ type }) {
         email: "",
         password: "",
     });
+    const [googleLoading, setGoogleLoading] = useState(false);
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
+
     const handled = useRef(false);
+    const toastShown = useRef(false);
 
     async function handleAuthForm(e) {
         e.preventDefault();
-
         try {
             const res = await axios.post(
                 `${import.meta.env.VITE_BACKEND_URL}/${type}`,
@@ -47,6 +49,8 @@ function AuthForm({ type }) {
         }
     }
     async function handleGoogleAuth() {
+        if (googleLoading) return;
+        setGoogleLoading(true);
         try {
             const user = await googleAuth();
             if (!user) return;
@@ -58,17 +62,22 @@ function AuthForm({ type }) {
             );
 
             dispatch(login(res.data.user));
-            toast.success(res.data.message);
-
+            if (!toastShown.current) {
+                toast.success(res.data.message);
+                toastShown.current = true;
+            }
             const redirectTo =
                 new URLSearchParams(location.search).get("redirect") || "/home";
             navigate(redirectTo);
         } catch (error) {
             toast.error("Google authentication failed");
+        } finally {
+            setGoogleLoading(false);
         }
     }
     useEffect(() => {
         async function handleRedirect() {
+            if (handled.current) return;
             const user = await handleRedirectResult();
             if (!user) return;
             if (handled.current) return;
@@ -81,8 +90,10 @@ function AuthForm({ type }) {
                 );
 
                 dispatch(login(res.data.user));
-                toast.success(res.data.message);
-
+                if (!toastShown.current) {
+                    toast.success(res.data.message);
+                    toastShown.current = true;
+                }
                 const redirectTo =
                     new URLSearchParams(location.search).get("redirect") || "/home";
 
@@ -125,11 +136,10 @@ function AuthForm({ type }) {
                         {type == "signin" ? "Login" : "Register"}</button>
                 </form>
                 <p className="text-xl font-semibold">or</p>
-                <div onClick={handleGoogleAuth} className="bg-white border cursor-pointer hover:bg-blue-200 w-full flex gap-4 justify-center items-center overflow-hidden py-3 px-4 rounded-full">
-                    <p className="text-2xl font-medium">continue with</p>
-                    <div className="">
+
+                <div disabled={googleLoading} onClick={handleGoogleAuth} className={`bg-white border cursor-pointer hover:bg-blue-200 w-full flex gap-4 justify-center items-center overflow-hidden py-3 px-4 rounded-full ${googleLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-200"}`}>
+                    <p className="text-2xl font-medium">{googleLoading ? "Signing you in..." : "Continue with"}</p>
                         <img className="w-8 h-8" src={googleIcon} alt="" />
-                    </div>
                 </div>
                 {type == "signin" ? <p>Don't have an account? <Link to={"/signup"}>Sign up</Link></p> : <p>Already have a account? <Link to={"/signin"}>Sign in</Link></p>}
             </div>
