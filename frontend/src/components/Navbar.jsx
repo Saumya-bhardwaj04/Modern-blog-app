@@ -7,7 +7,6 @@ import toast from "react-hot-toast";
 import { signOut } from "firebase/auth";
 import { auth } from "../utils/firebase.js";
 
-
 function Navbar() {
     const { token, name, profilePic, username } = useSelector((state) => state.user);
     const navigate = useNavigate();
@@ -15,8 +14,7 @@ function Navbar() {
     const [searchQuery, setSearchQuery] = useState(null);
     const [showSearchBar, setShowSearchBar] = useState(false);
     const location = useLocation();
-    const isStartPage = location.pathname === "/";
-    const isAuthPage = location.pathname === "/signin" || location.pathname === "/signup";
+    const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup";
 
     const dispatch = useDispatch()
     async function handleLogout() {
@@ -46,7 +44,6 @@ function Navbar() {
                             <img src={logo} alt="" />
                         </div>
                     </Link>
-                    {!isAuthPage && (
                         <div
                             className={`relative group  max-sm:absolute max-sm:z-40 max-sm:top-16 sm:block ${showSearchBar ? " max-sm:block " : " max-sm:hidden "
                                 }`}>
@@ -79,8 +76,6 @@ function Navbar() {
                                 </div>
                             )}
                         </div>
-                    )}
-
                 </div>
 
                 <div className="flex gap-5 justify-center items-center">

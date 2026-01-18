@@ -147,4 +147,4 @@ function AuthForm({ type }) {
 
     )
 }
-export default AuthForm
+export default AuthForm;
