@@ -64,7 +64,7 @@ async function createUser(req, res) {
             if (checkForexistingUser.verify) {
                 return res.status(400).json({
                     success: false,
-                    message: "user already registered with this email. try logging in",
+                    message: "user already registered with this email. try signing in",
                 })
             } else {
                 let verificationToken = await generateJWT({
