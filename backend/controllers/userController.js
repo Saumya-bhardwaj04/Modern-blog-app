@@ -58,7 +58,7 @@ async function createUser(req, res) {
             if (checkForexistingUser.googleAuth) {
                 return res.status(400).json({
                     success: false,
-                    message: "This email is already registered with google",
+                    message: "This email is registered via Google. Please sign in using Google."
                 })
             }
             if (checkForexistingUser.verify) {
