@@ -134,7 +134,7 @@ async function verifyEmail(req, res) {
             { new: true },
         )
         if (!user) {
-            return res.status(400).json({
+            return res.status(404).json({
                 success: false,
                 message: "user does not exist"
             })

@@ -1,6 +1,4 @@
 import { Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
-import axios from "axios";
 import AuthForm from "./pages/AuthForm";
 import Navbar from "./components/Navbar";
 import HomePage from "./components/HomePage";

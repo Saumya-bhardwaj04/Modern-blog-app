@@ -12,12 +12,19 @@ const port = PORT || 5000;
 app.use(express.json());
 
 const allowedOrigins = ALLOWED_ORIGINS
-  ? ALLOWED_ORIGINS.split(",")
+  ? ALLOWED_ORIGINS.split(",").map(o => o.trim())
   : [];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        return callback(null, false);
+      }
+    },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   })
@@ -31,14 +38,14 @@ app.use((req, res, next) => {
 });
 
 app.get("/", (req, res) => {
-    res.send("Backend is running");
+  res.send("Backend is running");
 });
 
 app.use("/api/v1", userRoute);
 app.use("/api/v1", blogRoute);
 
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-    dbConnect();
-    cloudinaryConfig();
+  console.log(`Server running on port ${port}`);
+  dbConnect();
+  cloudinaryConfig();
 })
