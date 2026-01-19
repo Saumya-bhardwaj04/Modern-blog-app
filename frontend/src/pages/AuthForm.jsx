@@ -23,6 +23,13 @@ function AuthForm({ type }) {
     const handled = useRef(false);
     const toastShown = useRef(false);
 
+    useEffect(() => {
+        if (location.state?.toast) {
+            toast.success(location.state.toast);
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
+
     async function handleAuthForm(e) {
         e.preventDefault();
         try {
