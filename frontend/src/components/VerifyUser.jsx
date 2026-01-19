@@ -24,7 +24,7 @@ function VerifyUser() {
                 setStatus("success");
                 setTimeout(() => {
                     navigate("/signin");
-                }, 2000);
+                }, 2500);
             } catch (error) {
                 toast.error(error.response?.data?.message || "Verification link is invalid or expired");
                 setStatus("error");

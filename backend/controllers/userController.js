@@ -82,8 +82,7 @@ async function createUser(req, res) {
                 });
                 return res.status(200).json({
                     success: true,
-                    message: `Account created successfully. 
-                    Please check your email to verify your account`,
+                    message: "Please check your email to verify your account",
                 })
             }
         }
@@ -109,8 +108,7 @@ async function createUser(req, res) {
         });
         return res.status(200).json({
             success: true,
-            message: `Account created successfully. 
-            Please check your email to verify your account`,
+            message: "Please check your email to verify your account",
         })
     } catch (error) {
         return res.status(500).json({
