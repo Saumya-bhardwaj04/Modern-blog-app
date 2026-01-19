@@ -70,7 +70,12 @@ function AuthForm({ type }) {
                 new URLSearchParams(location.search).get("redirect") || "/home";
             navigate(redirectTo);
         } catch (error) {
-            toast.error("Google authentication failed");
+            toast.error(error.response?.data?.message || "Google authentication failed");
+            if (type === "signup") {
+                setTimeout(() => {
+                    navigate("/signin");
+                }, 1200);
+            }
         } finally {
             setGoogleLoading(false);
         }
@@ -139,7 +144,7 @@ function AuthForm({ type }) {
 
                 <div disabled={googleLoading} onClick={handleGoogleAuth} className={`bg-white border cursor-pointer hover:bg-blue-200 w-full flex gap-4 justify-center items-center overflow-hidden py-3 px-4 rounded-full ${googleLoading ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-200"}`}>
                     <p className="text-2xl font-medium">{googleLoading ? "Signing you in..." : "Continue with"}</p>
-                        <img className="w-8 h-8" src={googleIcon} alt="" />
+                    <img className="w-8 h-8" src={googleIcon} alt="" />
                 </div>
                 {type == "signin" ? <p>Don't have an account? <Link to={"/signup"}>Sign up</Link></p> : <p>Already have a account? <Link to={"/signin"}>Sign in</Link></p>}
             </div>
