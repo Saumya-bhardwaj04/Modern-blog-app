@@ -82,7 +82,8 @@ async function createUser(req, res) {
                 });
                 return res.status(200).json({
                     success: true,
-                    message: "Please check your email to verify your account",
+                    message: `Account created successfully. 
+                    Please check your email to verify your account`,
                 })
             }
         }
@@ -108,7 +109,8 @@ async function createUser(req, res) {
         });
         return res.status(200).json({
             success: true,
-            message: "Please check your email to verify your account",
+            message: `Account created successfully. 
+            Please check your email to verify your account`,
         })
     } catch (error) {
         return res.status(500).json({
@@ -141,7 +143,7 @@ async function verifyEmail(req, res) {
         }
         return res.status(200).json({
             success: true,
-            message: "Email verified successfully",
+            message: "Email verified successfully. You can now sign in.",
         })
     } catch (error) {
         return res.status(500).json({
@@ -199,7 +201,6 @@ async function googleAuth(req, res) {
                     message: "This email is already registered. try signing in!",
                 })
             }
-
         }
         const username = email.split("@")[0] + randomUUID();
         let newUser = await User.create({
@@ -215,7 +216,7 @@ async function googleAuth(req, res) {
         })
         return res.status(200).json({
             success: true,
-            message: "Registeration successfull",
+            message: "Welcome! Your account has been created successfully🎉",
             user: {
                 id: newUser._id,
                 name: newUser.name,
