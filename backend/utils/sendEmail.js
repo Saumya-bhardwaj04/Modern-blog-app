@@ -4,7 +4,7 @@ const resend = new Resend(RESEND_API_KEY);
 
 async function sendEmail({ to, subject, html }) {
   return resend.emails.send({
-    from: "Meloque <onboarding@resend.dev>",
+    from: "Meloque <noreply@meloque.me>",
     to,
     subject,
     html,
