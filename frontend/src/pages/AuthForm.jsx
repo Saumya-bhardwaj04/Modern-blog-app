@@ -7,6 +7,7 @@ import { login } from "../utils/userSlice";
 import Input from "../components/Input";
 import googleIcon from "../assets/google-icon-logo-svgrepo-com.svg";
 import { googleAuth, handleRedirectResult } from "../utils/firebase";
+import { getMessaging, getToken } from "firebase/messaging";
 
 function AuthForm({ type }) {
     const [userData, setUserData] = useState({
@@ -22,6 +23,7 @@ function AuthForm({ type }) {
 
     const handled = useRef(false);
     const toastShown = useRef(false);
+    const messaging = getMessaging();
 
     useEffect(() => {
         if (location.state?.toast) {
@@ -44,7 +46,7 @@ function AuthForm({ type }) {
             } else {
                 dispatch(login(res.data.user));
                 toast.success(res.data.message);
-
+                await registerFcmToken(res.data.user.token);
                 const redirectTo =
                     new URLSearchParams(location.search).get("redirect") || "/home";
                 navigate(redirectTo);
@@ -73,6 +75,7 @@ function AuthForm({ type }) {
                 toast.success(res.data.message);
                 toastShown.current = true;
             }
+            await registerFcmToken(res.data.user.token);
             const redirectTo =
                 new URLSearchParams(location.search).get("redirect") || "/home";
             navigate(redirectTo);
@@ -87,6 +90,32 @@ function AuthForm({ type }) {
             setGoogleLoading(false);
         }
     }
+    async function registerFcmToken(authToken) {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission !== "granted") return;
+
+            const messaging = getMessaging();
+
+            const fcmToken = await getToken(messaging, {
+                vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+            });
+
+            if (fcmToken) {
+                await axios.post(
+                    `${import.meta.env.VITE_BACKEND_URL}/save-fcm-token`,
+                    { token: fcmToken },
+                    {
+                        headers: { Authorization: `Bearer ${authToken}` },
+                    }
+                );
+            }
+        } catch (err) {
+            console.error("FCM registration failed:", err.message);
+        }
+    }
+
+
     useEffect(() => {
         async function handleRedirect() {
             if (handled.current) return;

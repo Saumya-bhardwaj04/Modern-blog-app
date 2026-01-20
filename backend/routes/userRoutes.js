@@ -1,5 +1,6 @@
 const express = require("express");
-const { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog } = require("../controllers/userController");
+const { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken } = require("../controllers/userController");
+const { getMyNotifications, markAsRead } = require("../controllers/notificationController");
 const verifyUser = require("../middlewares/auth");
 const upload = require("../utils/multer");
 const route = express.Router();
@@ -19,6 +20,13 @@ route.post("/google-auth", googleAuth);
 
 // follow/unfollow
 route.patch("/follow/:id", verifyUser, followUser)
+
+// notifications routes
+route.get("/notifications", verifyUser, getMyNotifications);
+route.patch("/notifications/:id/mark-as-read", verifyUser, markAsRead);
+
+// routes/userRoutes.js
+route.post("/save-fcm-token", verifyUser, saveFcmToken);
 
 route.patch("/change-saved-liked-blog-visibility", verifyUser, changeSavedLikedBlog)
 

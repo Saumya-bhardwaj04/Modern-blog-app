@@ -30,6 +30,7 @@ function App() {
         <Route path="/:username/liked-blogs" element={<ProfilePage />}></Route>
         <Route path="/:username/draft-blogs" element={<ProfilePage />}></Route>
         <Route path="/edit-profile" element={<EditProfile />}></Route>
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/setting" element={<Setting />} />
       </Route>
     </Routes>

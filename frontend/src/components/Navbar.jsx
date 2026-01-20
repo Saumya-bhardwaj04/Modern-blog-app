@@ -6,9 +6,10 @@ import { logout } from "../utils/userSlice.js";
 import toast from "react-hot-toast";
 import { signOut } from "firebase/auth";
 import { auth } from "../utils/firebase.js";
+import socket from "../utils/socket";
 
 function Navbar() {
-    const { token, name, profilePic, username } = useSelector((state) => state.user);
+    const { token, name, profilePic, username, id: userId } = useSelector((state) => state.user);
     const navigate = useNavigate();
     const [showPopup, setShowPopup] = useState(false);
     const [searchQuery, setSearchQuery] = useState(null);
@@ -35,6 +36,31 @@ function Navbar() {
             }
         };
     }, [window.location.pathname]);
+    useEffect(() => {
+        if (!userId || socket.connected) return;
+        socket.connect();
+        socket.emit("join", userId);
+        return () => {
+            socket.disconnect();
+        };
+    }, [userId]);
+
+    // 🔔 listen for notifications
+    useEffect(() => {
+        const handler = (data) => {
+            if (!data?.sender?.name) return;
+
+            toast.success(
+                data.type === "follow"
+                    ? `${data.sender.name} followed you`
+                    : data.type === "like"
+                        ? `${data.sender.name} liked your blog`
+                        : `${data.sender.name} commented on your blog`
+            );
+        };
+        socket.on("notification", handler);
+        return () => socket.off("notification", handler);
+    }, []);
     return (
         <>
             <div className="sticky top-0 z-50 bg-white max-w-full flex justify-between items-center h-[70px] px-2 sm:px-[30px]  border-b drop-shadow-sm">
@@ -44,45 +70,49 @@ function Navbar() {
                             <img src={logo} alt="" />
                         </div>
                     </Link>
-                        <div
-                            className={`relative group  max-sm:absolute max-sm:z-40 max-sm:top-16 sm:block ${showSearchBar ? " max-sm:block " : " max-sm:hidden "
-                                }`}>
-                            <i className="fi fi-rr-search absolute text-lg top-1/2 -translate-y-1/2  ml-4 opacity-40"></i>
-                            <input
-                                type="text"
-                                disabled={isStartPage}
-                                className={`bg-gray-100 focus:outline-none max-sm:w-[calc(100vw_-_70px)] rounded-full pl-12 p-2 
+                    <div
+                        className={`relative group  max-sm:absolute max-sm:z-40 max-sm:top-16 sm:block ${showSearchBar ? " max-sm:block " : " max-sm:hidden "
+                            }`}>
+                        <i className="fi fi-rr-search absolute text-lg top-1/2 -translate-y-1/2  ml-4 opacity-40"></i>
+                        <input
+                            type="text"
+                            disabled={isStartPage}
+                            className={`bg-gray-100 focus:outline-none max-sm:w-[calc(100vw_-_70px)] rounded-full pl-12 p-2 
                              ${isStartPage ? "cursor-not-allowed opacity-50" : ""}
                              `}
-                                placeholder="Search"
-                                value={searchQuery ? searchQuery : ""}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (isStartPage) return;
-                                    if (e.code == "Enter" || e.code == "NumpadEnter" || e.keyCode == "13") {
-                                        if (searchQuery.trim()) {
-                                            navigate(`/search?q=${searchQuery.trim()}`);
-                                            setShowSearchBar(false);
-                                            if (showSearchBar) {
-                                                setSearchQuery("");
-                                            }
+                            placeholder="Search"
+                            value={searchQuery ? searchQuery : ""}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (isStartPage) return;
+                                if (e.code == "Enter" || e.code == "NumpadEnter" || e.keyCode == "13") {
+                                    if (searchQuery.trim()) {
+                                        navigate(`/search?q=${searchQuery.trim()}`);
+                                        setShowSearchBar(false);
+                                        if (showSearchBar) {
+                                            setSearchQuery("");
                                         }
                                     }
-                                }}
-                            />
-                            {isStartPage && (
-                                <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-sm px-3 py-1 rounded-md whitespace-nowrap z-50">
-                                    Login to enable search
-                                </div>
-                            )}
-                        </div>
+                                }
+                            }}
+                        />
+                        {isStartPage && (
+                            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-sm px-3 py-1 rounded-md whitespace-nowrap z-50">
+                                Login to enable search
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <div className="flex gap-5 justify-center items-center">
-                        <i
-                            className="fi fi-rr-search text-xl sm:hidden cursor-pointer"
-                            onClick={() => setShowSearchBar((prev) => !prev)}
-                        ></i>
+                    <i
+                        className="fi fi-rr-bell cursor-pointer"
+                        onClick={() => navigate("/notifications")}
+                    />
+                    <i
+                        className="fi fi-rr-search text-xl sm:hidden cursor-pointer"
+                        onClick={() => setShowSearchBar((prev) => !prev)}
+                    ></i>
                     <Link
                         to={token ? "/add-blog" : "/signin?redirect=/add-blog"}
                     >                        <div className=" flex gap-2 items-center">

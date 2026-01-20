@@ -4,6 +4,9 @@ const Comment = require("../models/commentSchema");
 const bcrypt = require('bcrypt');
 const { generateJWT, verifyJWT } = require("../utils/generateToken");
 const sendEmail = require("../utils/sendEmail");
+const Notification = require("../models/notificationSchema");
+const sendPush = require("../utils/sendPush");
+const { getIO } = require("../socket");
 const ShortUniqueId = require("short-unique-id");
 const { randomUUID } = new ShortUniqueId({ length: 5 })
 // google auth
@@ -510,7 +513,6 @@ async function deleteUser(req, res) {
         });
     }
 }
-
 async function followUser(req, res) {
     try {
         const followerId = req.user;
@@ -528,6 +530,20 @@ async function followUser(req, res) {
                 message: "User not found",
             })
         }
+        const io = getIO();
+        await Notification.create({
+            recipient: id,
+            sender: followerId,
+            type: "follow",
+        });
+        io.to(id).emit("notification", { type: "follow", sender: followerId });
+        const follower = await User.findById(followerId).select("name");
+        sendPush(
+            user.fcmTokens,
+            "New follower 👤",
+            `${follower.name} started following you`,
+            { type: "follow" }
+        );
         if (!user.followers.includes(followerId)) {
             await User.findByIdAndUpdate(id, { $push: { followers: followerId } });
             await User.findByIdAndUpdate(followerId, { $push: { following: id } });
@@ -577,4 +593,17 @@ async function changeSavedLikedBlog(req, res) {
         })
     }
 }
-module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog };
+async function saveFcmToken(req, res) {
+  const userId = req.user;
+  const { token } = req.body;
+
+  if (!token) return res.sendStatus(400);
+
+  await User.findByIdAndUpdate(userId, {
+    $addToSet: { fcmTokens: token },
+  });
+
+  res.sendStatus(200);
+}
+
+module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken };

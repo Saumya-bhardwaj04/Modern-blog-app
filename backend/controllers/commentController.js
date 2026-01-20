@@ -1,8 +1,11 @@
 const Blog = require("../models/blogSchema");
 const Comment = require("../models/commentSchema");
+const { getIO } = require("../socket");
+
 async function addComment(req, res) {
     try {
         const creator = req.user;
+        const userId = req.user;
         const { id } = req.params;
         const { comment } = req.body;
         if (!comment) {
@@ -29,6 +32,28 @@ async function addComment(req, res) {
                 select: "name email username profilePic"
             })
         });
+        const io = getIO();
+
+        await Notification.create({
+            recipient: blog.creator,
+            sender: userId,
+            type: "comment",
+            blog: blog._id,
+        });
+
+        io.to(blog.creator.toString()).emit("notification", {
+            type: "comment",
+            sender: user,
+            blogId: blog._id,
+        });
+        const commentUser = await User.findById(creator).select("name");
+        const Creator = await User.findById(blog.creator).select("fcmTokens");
+        sendPush(
+            Creator.fcmTokens,
+            "New comment 💬",
+            `${commentUser.name} commented on your blog`,
+            { blogId: blog._id.toString(), type: "comment" }
+        );
 
         await Blog.findByIdAndUpdate(id, {
             $push: { comments: newComment._id },
@@ -135,13 +160,45 @@ async function likeComment(req, res) {
     try {
         const userId = req.user;
         const { id } = req.params;
-        const comment = await Comment.findById(id);
+        const comment = await Comment.findById(id).populate("blog");
         if (!comment) {
             return res.status(404).json({
                 success: false,
                 message: "comment not found",
             })
         }
+        const blog = comment.blog;
+        if (!blog) {
+            return res.status(200).json({
+                success: false,
+                message: "Blog not found",
+            })
+        }
+        const io = getIO();
+
+        await Notification.create({
+            recipient: blog.creator,
+            sender: userId,
+            type: "like",
+            blog: blog._id,
+        });
+        const senderUser = await User.findById(req.user)
+            .select("name username profilePic");
+
+        io.to(blog.creator.toString()).emit("notification", {
+            type: "like",
+            sender: senderUser,
+            blogId: blog._id.toString(),
+        });
+        const liker = await User.findById(user).select("name");
+        const creator = await User.findById(blog.creator).select("fcmTokens");
+        sendPush(
+            creator.fcmTokens,
+            "New like ❤️",
+            `${liker.name} liked your blog`,
+            { blogId: blog._id.toString(), type: "like" }
+        );
+
         if (!comment.likes.includes(userId)) {
             await Comment.findByIdAndUpdate(id, { $push: { likes: userId } });
             return res.status(200).json({

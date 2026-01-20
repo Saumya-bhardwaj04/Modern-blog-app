@@ -4,6 +4,8 @@ const { uploadImage, deleteImagefromCloudinary } = require("../utils/uploadImage
 const Comment = require("../models/commentSchema");
 const ShortUniqueId = require("short-unique-id");
 const { randomUUID } = new ShortUniqueId({ length: 10 })
+const { getIO } = require("../socket");
+
 async function createBlog(req, res) {
     try {
         const creator = req.user
@@ -241,6 +243,7 @@ async function deleteBlog(req, res) {
 async function likeBlog(req, res) {
     try {
         const user = req.user;
+        const userId = req.user;
         const { id } = req.params;
         const blog = await Blog.findById(id);
         if (!blog) {
@@ -249,6 +252,23 @@ async function likeBlog(req, res) {
                 message: "Blog not found",
             })
         }
+        const io = getIO();
+        await Notification.create({
+            recipient: blog.creator,
+            sender: userId,
+            type: "like",
+            blog: blog._id,
+        });
+        io.to(blog.creator.toString()).emit("notification", { blogId: blog._id.toString(), type: "like" });
+        const liker = await User.findById(user).select("name");
+        const creator = await User.findById(blog.creator).select("fcmTokens");
+        sendPush(
+            creator.fcmTokens,
+            "New like ❤️",
+            `${liker.name} liked your blog`,
+            { blogId: blog._id.toString(), type: "like" }
+        );
+
         if (!blog.likes.includes(user)) {
             await Blog.findByIdAndUpdate(id, { $push: { likes: user } });
             await User.findByIdAndUpdate(user, { $push: { likeBlogs: id } });
