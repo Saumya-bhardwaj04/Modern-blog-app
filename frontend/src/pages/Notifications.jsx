@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { fetchNotifications } from "../utils/getNotifications";
+import { fetchNotifications } from "../utils/getNotification";
 import { Link } from "react-router-dom";
 
 function Notifications() {
