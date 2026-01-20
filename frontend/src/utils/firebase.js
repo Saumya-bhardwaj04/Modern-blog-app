@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import {
-    getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult
+    getAuth, GoogleAuthProvider, signInWithPopup, getRedirectResult
 } from "firebase/auth";
 import toast from "react-hot-toast";
 

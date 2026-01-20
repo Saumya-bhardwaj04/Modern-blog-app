@@ -542,7 +542,7 @@ async function followUser(req, res) {
             user.fcmTokens,
             "New follower 👤",
             `${follower.name} started following you`,
-            { type: "follow" }
+            { type: "follow", followerId }
         );
         if (!user.followers.includes(followerId)) {
             await User.findByIdAndUpdate(id, { $push: { followers: followerId } });

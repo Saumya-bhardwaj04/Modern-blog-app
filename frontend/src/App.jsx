@@ -10,8 +10,17 @@ import EditProfile from "./pages/EditProfile";
 import SearchBlogs from "./components/SearchBlogs";
 import Setting from "./components/Setting";
 import StartPage from "./pages/StartPage";
+import { useEffect } from "react";
 
 function App() {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/firebase-messaging-sw.js")
+        .then(() => console.log("FCM SW registered"))
+        .catch(console.error);
+    }
+  }, []);
   return (
     <Routes>
       <Route path="/" element={<Navbar />}>

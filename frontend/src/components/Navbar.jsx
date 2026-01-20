@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { signOut } from "firebase/auth";
 import { auth } from "../utils/firebase.js";
 import socket from "../utils/socket";
+import { getMessaging, onMessage } from "firebase/messaging";
 
 function Navbar() {
     const { token, name, profilePic, username, id: userId } = useSelector((state) => state.user);
@@ -16,6 +17,15 @@ function Navbar() {
     const [showSearchBar, setShowSearchBar] = useState(false);
     const location = useLocation();
     const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup";
+
+    useEffect(() => {
+        const messaging = getMessaging();
+        const unsubscribe = onMessage(messaging, (payload) => {
+            toast(payload.notification?.title);
+        });
+
+        return () => unsubscribe();
+    }, [navigate]);
 
     const dispatch = useDispatch()
     async function handleLogout() {
@@ -37,7 +47,7 @@ function Navbar() {
         };
     }, [window.location.pathname]);
     useEffect(() => {
-        if (!userId || socket.connected) return;
+        if (!userId) return;
         socket.connect();
         socket.emit("join", userId);
         return () => {
