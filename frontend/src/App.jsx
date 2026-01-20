@@ -11,6 +11,7 @@ import SearchBlogs from "./components/SearchBlogs";
 import Setting from "./components/Setting";
 import StartPage from "./pages/StartPage";
 import { useEffect } from "react";
+import Notifications from "./components/Notifications";
 
 function App() {
   useEffect(() => {
