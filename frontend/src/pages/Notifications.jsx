@@ -79,7 +79,8 @@ function Notifications() {
 
     // fetch last 12 notifications only
     fetchNotifications(token).then((res) => {
-      setNotifications(res.notifications.slice(0, 12));
+      const list = res.notifications || [];
+      setNotifications(list.slice(0, 12));
     });
   }, [token]);
 

@@ -11,7 +11,7 @@ export async function fetchNotifications(token, page = 1, limit = 5) {
     }
   );
 
-  return res.data.notifications;
+  return res.data;
 }
 
 export async function markNotificationRead(id, token) {
