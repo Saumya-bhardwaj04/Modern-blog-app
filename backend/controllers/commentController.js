@@ -59,7 +59,7 @@ async function addComment(req, res) {
             io.to(blog.creator.toString()).emit("notification", {
                 type: "comment",
                 sender,
-                blogId: blog._id.toString(),
+                blogSlug: blog.blogId,
             });
 
             if (creator.fcmTokens?.length) {
@@ -67,7 +67,7 @@ async function addComment(req, res) {
                     creator.fcmTokens,
                     "New comment 💬",
                     `${sender.name} commented on your blog`,
-                    { type: "comment", blogId: blog._id.toString() }
+                    { type: "comment", blogSlug: blog.blogId, }
                 );
             }
         }
@@ -213,7 +213,7 @@ async function likeComment(req, res) {
             io.to(blog.creator.toString()).emit("notification", {
                 type: "like",
                 sender,
-                blogId: blog._id.toString(),
+                blogSlug: blog.blogId,
             });
 
             if (creator.fcmTokens?.length) {
@@ -221,7 +221,7 @@ async function likeComment(req, res) {
                     creator.fcmTokens,
                     "New like ❤️",
                     `${sender.name} liked a comment on your blog`,
-                    { type: "like", blogId: blog._id.toString() }
+                    { type: "like", blogSlug: blog.blogId, }
                 );
             }
         }

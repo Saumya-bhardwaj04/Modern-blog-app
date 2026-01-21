@@ -41,7 +41,7 @@ function Navbar() {
                         if (data.type === "follow") {
                             navigate(`/@${data.sender.username}`);
                         } else {
-                            navigate(`/blog/${data.blogId}`);
+                            navigate(`/blog/${data.blogSlug}`);
                         }
                     }}
                 >
@@ -71,7 +71,7 @@ function Navbar() {
                     onClick={() => {
                         toast.dismiss(t.id);
                         if (type === "follow") navigate(`/@${username}`);
-                        else navigate(`/blog/${blogId}`);
+                        else navigate(`/blog/${blogSlug}`);
                     }}
                 >
                     {payload.notification?.title}

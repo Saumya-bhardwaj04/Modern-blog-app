@@ -26,7 +26,7 @@ function Notifications() {
         const link =
           n.type === "follow"
             ? `/@${n.sender.username}`
-            : `/blog/${n.blog?._id}`;
+            : `/blog/${n.blog?.blogId}`;
 
         return (
           <Link key={n._id} to={link} onClick={() => handleClick(n._id)}>

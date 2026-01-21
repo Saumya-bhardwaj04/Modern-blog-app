@@ -288,7 +288,7 @@ async function likeBlog(req, res) {
             io.to(blog.creator.toString()).emit("notification", {
                 type: "like",
                 sender: senderUser,
-                blogId: blog._id.toString(),
+                blogSlug: blog.blogId,
             });
 
             if (creator.fcmTokens?.length) {
@@ -296,7 +296,7 @@ async function likeBlog(req, res) {
                     creator.fcmTokens,
                     "New like ❤️",
                     `${sender.name} liked your blog`,
-                    { type: "like", blogId: blog._id.toString() }
+                    { type: "like", blogSlug: blog.blogId, }
                 );
             }
         }

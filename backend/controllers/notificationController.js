@@ -5,7 +5,7 @@ async function getMyNotifications(req, res) {
 
   const notifications = await Notification.find({ recipient: userId })
     .populate("sender", "name username profilePic")
-    .populate("blog", "title")
+    .populate("blog", "title blogId")
     .sort({ createdAt: -1 });
 
   res.status(200).json({
