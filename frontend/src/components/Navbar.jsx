@@ -45,7 +45,7 @@ function Navbar() {
                             navigate("/notifications");
                         }
                         else if (data.type === "like") {
-                            navigate(`/blog/${data.blogId}`);
+                            navigate(`/blog/${data.blogSlug}`);
                         }
                         else if (data.type === "follow") {
                             navigate(`/@${data.sender.username}`);
@@ -69,14 +69,14 @@ function Navbar() {
         const messaging = getMessaging();
 
         const unsubscribe = onMessage(messaging, (payload) => {
-            const { type, blogId, username } = payload.data || {};
+            const { type, blogSlug, username } = payload.data || {};
             toast((t) => (
                 <div
                     className="cursor-pointer"
                     onClick={() => {
                         toast.dismiss(t.id);
                         if (type === "follow") navigate(`/@${username}`);
-                        else navigate(`/blog/${blogId}`);
+                        else navigate(`/blog/${blogSlug}`);
                     }}
                 >
                     {payload.notification?.title}
