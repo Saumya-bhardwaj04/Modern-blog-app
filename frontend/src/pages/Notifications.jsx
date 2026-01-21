@@ -10,9 +10,20 @@ function formatTime(date) {
   return new Date(date).toLocaleString([], {
     hour: "2-digit",
     minute: "2-digit",
-    day: "numeric",
-    month: "short",
   });
+}
+
+function isToday(date) {
+  const d = new Date(date);
+  const today = new Date();
+  return d.toDateString() === today.toDateString();
+}
+
+function isThisWeek(date) {
+  const d = new Date(date);
+  const now = new Date();
+  const diff = now - d;
+  return diff < 7 * 24 * 60 * 60 * 1000 && !isToday(date);
 }
 
 /* merge same notification */
@@ -66,9 +77,7 @@ function Notifications() {
           `${import.meta.env.VITE_BACKEND_URL}/notifications`,
           {
             params: { limit: 6, page },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           }
         );
 
@@ -96,79 +105,91 @@ function Notifications() {
     [notifications]
   );
 
+  function renderNotification(n) {
+    const link =
+      n.type === "follow"
+        ? `/@${n.sender?.username}`
+        : `/blog/${n.blog?.blogId}`;
+
+    return (
+      <Link key={n._id} to={link} onClick={() => handleClick(n._id)}>
+        <div
+          className={`relative flex items-center gap-2 p-4 rounded-xl border
+          ${!n.isRead
+            ? "bg-blue-50 border-blue-200"
+            : "bg-white border-gray-200"}
+          hover:shadow-md transition`}
+        >
+          <img
+            src={
+              n.sender?.profilePic ||
+              `https://api.dicebear.com/9.x/initials/svg?seed=${n.sender?.name || "U"}`
+            }
+            className="w-10 h-10 rounded-full object-cover"
+          />
+
+          <div className="text-sm leading-snug">
+            <strong>{n.sender?.name || "Deleted user"}</strong>{" "}
+            {n.type === "follow" && "started following you"}
+            {n.type === "like" && "liked your blog"}
+            {n.type === "comment" && "commented on your blog"}
+          </div>
+
+          <span className="absolute bottom-2 right-3 text-[11px] text-gray-400">
+            {formatTime(n.createdAt)}
+          </span>
+        </div>
+      </Link>
+    );
+  }
+
   if (!token) return <Navigate to="/" />;
 
   return (
-    <div className="max-w-[600px] mx-auto p-5">
+    <div className="max-w-[600px] mx-auto p-5 relative">
       <h1 className="text-2xl font-semibold mb-6">Notifications</h1>
 
       {mergedNotifications.length === 0 && !loading && (
         <p className="text-gray-500 text-center">No notifications yet</p>
       )}
 
-      <div className="space-y-4 relative">
-        {mergedNotifications.map((n) => {
-          if (!n.sender) return null;
+      {/* TODAY */}
+      {mergedNotifications.some((n) => isToday(n.createdAt)) && (
+        <p className="text-xs font-semibold text-gray-500 mb-2">TODAY</p>
+      )}
 
-          const link =
-            n.type === "follow"
-              ? `/@${n.sender.username}`
-              : `/blog/${n.blog?.blogId}`;
+      <div className="space-y-3">
+        {mergedNotifications
+          .filter((n) => isToday(n.createdAt))
+          .map(renderNotification)}
+      </div>
 
-          return (
-            <Link key={n._id} to={link} onClick={() => handleClick(n._id)}>
-              <div
-                className={`relative flex gap-4 p-4 rounded-xl border transition
-                  ${
-                    !n.isRead
-                      ? "bg-blue-50 border-blue-200"
-                      : "bg-white border-gray-200"
-                  }
-                  hover:shadow-md`}
-              >
-                {/* avatar */}
-                <img
-                  src={
-                    n.sender.profilePic ||
-                    `https://api.dicebear.com/9.x/initials/svg?seed=${n.sender.name}`
-                  }
-                  className="w-10 h-10 rounded-full object-cover"
-                />
+      {/* THIS WEEK */}
+      {mergedNotifications.some((n) => isThisWeek(n.createdAt)) && (
+        <p className="text-xs font-semibold text-gray-500 mt-6 mb-2">
+          THIS WEEK
+        </p>
+      )}
 
-                {/* centered message */}
-                <div className="flex-1 flex items-center justify-center text-center text-sm">
-                  <span>
-                    <strong>{n.sender.name}</strong>{" "}
-                    {n.type === "follow" && "started following you"}
-                    {n.type === "like" && "liked your blog"}
-                    {n.type === "comment" && "commented on your blog"}
-                  </span>
-                </div>
-
-                {/* time */}
-                <span className="absolute bottom-2 right-3 text-[11px] text-gray-400">
-                  {formatTime(n.createdAt)}
-                </span>
-              </div>
-            </Link>
-          );
-        })}
-
-        {hasMore && (
-          <div className="pointer-events-none absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-white to-transparent" />
-        )}
+      <div className="space-y-3">
+        {mergedNotifications
+          .filter((n) => isThisWeek(n.createdAt))
+          .map(renderNotification)}
       </div>
 
       {hasMore && (
-        <div className="flex justify-center mt-6">
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            disabled={loading}
-            className="px-6 py-2 rounded-full border text-sm hover:bg-gray-100 transition"
-          >
-            {loading ? "Loading..." : "Load older notifications"}
-          </button>
-        </div>
+        <>
+          <div className="pointer-events-none absolute bottom-20 left-0 w-full h-16 bg-gradient-to-t from-white to-transparent" />
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={loading}
+              className="px-6 py-2 rounded-full border text-sm hover:bg-gray-100 transition"
+            >
+              {loading ? "Loading..." : "Load older notifications"}
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
