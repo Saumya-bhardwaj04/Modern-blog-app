@@ -1,19 +1,47 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link, Navigate } from "react-router-dom";
-import usePagination from "../hooks/usePagination";
+import axios from "axios";
 import { markNotificationRead } from "../utils/getNotification";
 
 function Notifications() {
   const { token } = useSelector((state) => state.user);
-  const [page, setPage] = useState(1);
 
-  const {
-    blogs: notifications,
-    setBlogs: setNotifications,
-    hasMore,
-    isLoading,
-  } = usePagination("notifications", {}, 5, page, token);
+  const [notifications, setNotifications] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function fetchNotifications() {
+      try {
+        setLoading(true);
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/notifications`,
+          {
+            params: { limit: 10, page },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setNotifications((prev) => [
+          ...prev,
+          ...res.data.notifications,
+        ]);
+        setHasMore(res.data.hasMore);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchNotifications();
+  }, [page, token]);
 
   async function handleClick(id) {
     await markNotificationRead(id, token);
@@ -23,17 +51,20 @@ function Notifications() {
       )
     );
   }
+
   if (!token) return <Navigate to="/" />;
 
   return (
     <div className="max-w-[600px] mx-auto p-5">
       <h1 className="text-2xl font-semibold mb-6">Notifications</h1>
 
-      {notifications.length === 0 && !isLoading && (
-        <p className="text-gray-500 text-center">No notifications yet</p>
+      {notifications.length === 0 && !loading && (
+        <p className="text-gray-500 text-center">
+          No notifications yet
+        </p>
       )}
 
-      <div className="space-y-3 relative">
+      <div className="space-y-4 relative">
         {notifications.map((n) => {
           if (!n.sender) return null;
 
@@ -50,9 +81,10 @@ function Notifications() {
             >
               <div
                 className={`flex gap-3 p-4 rounded-xl border transition
-                  ${!n.isRead
-                    ? "bg-blue-50 border-blue-200"
-                    : "bg-white border-gray-200"
+                  ${
+                    !n.isRead
+                      ? "bg-blue-50 border-blue-200"
+                      : "bg-white border-gray-200"
                   }
                   hover:shadow-md`}
               >
@@ -61,25 +93,21 @@ function Notifications() {
                     n.sender.profilePic ||
                     `https://api.dicebear.com/9.x/initials/svg?seed=${n.sender.name}`
                   }
-                  alt=""
                   className="w-10 h-10 rounded-full object-cover"
                 />
 
-                <div className="text-sm leading-snug">
-                  <p>
-                    <strong>{n.sender.name}</strong>{" "}
-                    {n.type === "follow" && "started following you"}
-                    {n.type === "like" && "liked your blog"}
-                    {n.type === "comment" && "commented on your blog"}
-                  </p>
+                <div className="text-sm">
+                  <strong>{n.sender.name}</strong>{" "}
+                  {n.type === "follow" && "started following you"}
+                  {n.type === "like" && "liked your blog"}
+                  {n.type === "comment" && "commented on your blog"}
                 </div>
               </div>
             </Link>
           );
         })}
-
         {hasMore && (
-          <div className="pointer-events-none absolute bottom-0 left-0 w-full h-14 bg-gradient-to-t from-white to-transparent" />
+          <div className="pointer-events-none absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-white to-transparent" />
         )}
       </div>
 
@@ -87,16 +115,11 @@ function Notifications() {
         <div className="flex justify-center mt-6">
           <button
             onClick={() => setPage((p) => p + 1)}
-            className="text-sm px-5 py-2 rounded-full border border-gray-300 hover:bg-gray-100 transition"
+            disabled={loading}
+            className="px-6 py-2 rounded-full border text-sm hover:bg-gray-100 transition"
           >
-            Load older notifications
+            {loading ? "Loading..." : "Load older notifications"}
           </button>
-        </div>
-      )}
-
-      {isLoading && (
-        <div className="flex justify-center mt-4">
-          <span className="loader"></span>
         </div>
       )}
     </div>
