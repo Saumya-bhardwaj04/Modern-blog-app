@@ -14,7 +14,7 @@ function Notifications() {
     setBlogs: setNotifications,
     hasMore,
     isLoading,
-  } = usePagination("notifications", {}, 5, page);
+  } = usePagination("notifications", {}, 5, page,token);
 
   async function handleClick(id) {
     await markNotificationRead(id, token);
