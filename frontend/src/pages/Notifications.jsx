@@ -1,9 +1,8 @@
-import { useState } from "react";
+import { useEffect,useState } from "react";
 import { useSelector } from "react-redux";
 import { Link, Navigate } from "react-router-dom";
 import usePagination from "../hooks/usePagination";
 import { fetchNotifications, markNotificationRead } from "../utils/getNotification";
-import { useEffect } from "react";
 
 function Notifications() {
   const { token } = useSelector((state) => state.user);
