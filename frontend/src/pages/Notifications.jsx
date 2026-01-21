@@ -1,8 +1,7 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link, Navigate } from "react-router-dom";
-import usePagination from "../hooks/usePagination";
-import { markNotificationRead } from "../utils/getNotification";
+import { fetchNotifications, markNotificationRead } from "../utils/getNotification";
 
 /* ---------------- helpers ---------------- */
 
@@ -32,7 +31,7 @@ function groupByDate(list) {
   return { today, lastWeek, older };
 }
 
-/* -------- MERGE LOGIC (FOLLOW + LIKE + COMMENT) -------- */
+/* -------- MERGE FOLLOW + LIKE + COMMENT -------- */
 
 function mergeNotifications(notifications) {
   const map = {};
@@ -41,8 +40,8 @@ function mergeNotifications(notifications) {
   notifications.forEach((n) => {
     if (!n.sender) return;
 
-    // 🔑 merge key
     let key = n.type;
+
     if (n.type === "like" || n.type === "comment") {
       key = `${n.type}-${n.blog?._id}`;
     }
@@ -54,10 +53,11 @@ function mergeNotifications(notifications) {
       };
     } else {
       map[key].senders.push(n.sender);
+      map[key].isRead = map[key].isRead && n.isRead;
+
       if (new Date(n.createdAt) > new Date(map[key].createdAt)) {
         map[key].createdAt = n.createdAt;
       }
-      map[key].isRead = map[key].isRead && n.isRead;
     }
   });
 
@@ -72,23 +72,25 @@ function mergeNotifications(notifications) {
 
 function Notifications() {
   const { token } = useSelector((state) => state.user);
-  const [page, setPage] = useState(1);
+  const [notifications, setNotifications] = useState([]);
 
-  const {
-    blogs: rawNotifications,
-    setBlogs: setNotifications,
-    hasMore,
-    isLoading,
-  } = usePagination("notifications", {}, 5, page, token);
+  useEffect(() => {
+    if (!token) return;
 
-  const mergedNotifications = useMemo(
-    () => mergeNotifications(rawNotifications),
-    [rawNotifications]
+    // fetch last 12 notifications only
+    fetchNotifications(token).then((res) => {
+      setNotifications(res.notifications.slice(0, 12));
+    });
+  }, [token]);
+
+  const merged = useMemo(
+    () => mergeNotifications(notifications),
+    [notifications]
   );
 
   const { today, lastWeek, older } = useMemo(
-    () => groupByDate(mergedNotifications),
-    [mergedNotifications]
+    () => groupByDate(merged),
+    [merged]
   );
 
   async function handleClick(id) {
@@ -120,11 +122,7 @@ function Notifications() {
                 : `/blog/${n.blog?.blogId}`;
 
             return (
-              <Link
-                key={n._id}
-                to={link}
-                onClick={() => handleClick(n._id)}
-              >
+              <Link key={n._id} to={link} onClick={() => handleClick(n._id)}>
                 <div
                   className={`relative flex gap-3 p-4 rounded-xl border transition
                   ${
@@ -139,7 +137,7 @@ function Notifications() {
                     {firstSender.name[0]}
                   </div>
 
-                  {/* Message */}
+                  {/* Center message */}
                   <div className="flex-1 flex items-center justify-center text-center text-sm px-2">
                     <span>
                       <strong>{firstSender.name}</strong>
@@ -166,7 +164,7 @@ function Notifications() {
     <div className="max-w-[600px] mx-auto p-5">
       <h1 className="text-2xl font-semibold mb-6">Notifications</h1>
 
-      {rawNotifications.length === 0 && !isLoading && (
+      {merged.length === 0 && (
         <p className="text-center text-gray-500">
           No notifications yet
         </p>
@@ -175,23 +173,6 @@ function Notifications() {
       <Section title="Today" items={today} />
       <Section title="Last week" items={lastWeek} />
       <Section title="Older" items={older} />
-
-      {hasMore && (
-        <div className="flex justify-center mt-8">
-          <button
-            onClick={() => setPage((p) => p + 1)}
-            className="px-6 py-2 text-sm rounded-full border border-gray-300 hover:bg-gray-100 transition"
-          >
-            Load older notifications
-          </button>
-        </div>
-      )}
-
-      {isLoading && (
-        <div className="flex justify-center mt-6">
-          <span className="loader"></span>
-        </div>
-      )}
     </div>
   );
 }
