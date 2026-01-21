@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { fetchNotifications } from "../utils/getNotification";
+import {
+  fetchNotifications,
+  markNotificationRead,
+} from "../utils/getNotification";
 import { Link } from "react-router-dom";
 
 function Notifications() {
@@ -9,11 +12,19 @@ function Notifications() {
 
   useEffect(() => {
     if (!token) return;
-
-    fetchNotifications(token).then((res) => {
-      setNotifications(res || []);
-    });
+    fetchNotifications(token).then(setNotifications);
   }, [token]);
+
+  async function handleClick(n) {
+    if (!n.isRead) {
+      await markNotificationRead(n._id, token);
+      setNotifications((prev) =>
+        prev.map((item) =>
+          item._id === n._id ? { ...item, isRead: true } : item
+        )
+      );
+    }
+  }
 
   return (
     <div className="max-w-[600px] mx-auto p-5">
@@ -28,10 +39,11 @@ function Notifications() {
             : `/blog/${n.blog?._id}`;
 
         return (
-          <Link key={n._id} to={link}>
+          <Link key={n._id} to={link} onClick={() => handleClick(n)}>
             <div
-              className={`p-3 border-b cursor-pointer ${!n.isRead ? "bg-blue-50" : ""
-                }`}
+              className={`p-3 border-b cursor-pointer ${
+                !n.isRead ? "bg-blue-50" : ""
+              }`}
             >
               <p className="font-medium">
                 <strong>{n.sender?.name}</strong>{" "}

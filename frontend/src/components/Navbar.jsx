@@ -17,7 +17,7 @@ function Navbar() {
     const [showPopup, setShowPopup] = useState(false);
     const [searchQuery, setSearchQuery] = useState(null);
     const [showSearchBar, setShowSearchBar] = useState(false);
-    const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup" || location.pathname === "/notifcations";
+    const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup" || location.pathname === "/notifications";
     //socket connection
     useEffect(() => {
         if (!userId) return;
@@ -145,13 +145,12 @@ function Navbar() {
                 </div>
 
                 <div className="flex gap-5 justify-center items-center">
-                    {isStartPage && (
+                    {token && (
                         <i
                             className="fi fi-rr-bell cursor-pointer"
                             onClick={() => navigate("/notifications")}
                         />
                     )}
-
                     <i
                         className="fi fi-rr-search text-xl sm:hidden cursor-pointer"
                         onClick={() => setShowSearchBar((prev) => !prev)}
