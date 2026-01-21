@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSelector } from "react-redux";
 import { Link, Navigate } from "react-router-dom";
 import usePagination from "../hooks/usePagination";
-import { markNotificationRead } from "../utils/getNotification";
+import { fetchNotifications, markNotificationRead } from "../utils/getNotification";
 
 function Notifications() {
   const { token } = useSelector((state) => state.user);
@@ -15,8 +15,6 @@ function Notifications() {
     isLoading,
   } = usePagination("notifications", {}, 5, page);
 
-  if (!token) return <Navigate to="/" />;
-
   async function handleClick(id) {
     await markNotificationRead(id, token);
     setNotifications((prev) =>
@@ -25,6 +23,14 @@ function Notifications() {
       )
     );
   }
+  useEffect(() => {
+    if (!token) return;
+
+    fetchNotifications(token, page, 5).then((res) => {
+      setNotifications((prev) => [...prev, ...res.notifications]);
+    });
+  }, [token, page]);
+  if (!token) return <Navigate to="/" />;
 
   return (
     <div className="max-w-[600px] mx-auto p-5">
