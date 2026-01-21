@@ -269,7 +269,7 @@ async function likeBlog(req, res) {
         await blog.save();
 
         // 🔔 notify only when liked & not self
-        if (blog.creator.toString() !== userId.toString()) {
+        if (!alreadyLiked && blog.creator.toString() !== userId.toString()) {
             const io = getIO();
 
             await Notification.create({

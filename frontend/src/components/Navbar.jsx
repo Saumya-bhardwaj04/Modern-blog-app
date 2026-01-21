@@ -20,7 +20,10 @@ function Navbar() {
     const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup" || location.pathname === "/notifications";
     //socket connection
     useEffect(() => {
-        if (!userId) return;
+        if (!userId) {
+            socket.disconnect();
+            return;
+        }
         socket.connect();
         socket.emit("join", userId);
         return () => {
@@ -29,49 +32,51 @@ function Navbar() {
     }, [userId]);
     // socket notification listener
     useEffect(() => {
+        if (!token) return;
         const handler = (data) => {
             if (!data?.sender?.name) return;
-
             toast((t) => (
                 <div
                     className="cursor-pointer"
                     onClick={() => {
                         toast.dismiss(t.id);
 
-                        if (data.type === "follow") {
+                        if (data.type === "comment") {
+                            navigate("/notifications");
+                        }
+                        else if (data.type === "like") {
+                            navigate(`/blog/${data.blogId}`);
+                        }
+                        else if (data.type === "follow") {
                             navigate(`/@${data.sender.username}`);
-                        } else {
-                            navigate(`/blog/${data.blogSlug}`);
                         }
                     }}
                 >
                     <strong>{data.sender.name}</strong>{" "}
-                    {data.type === "follow"
-                        ? "started following you"
-                        : data.type === "like"
-                            ? "liked your blog"
-                            : "commented on your blog"}
+                    {data.type === "follow" && "started following you"}
+                    {data.type === "like" && "liked your blog"}
+                    {data.type === "comment" && "commented on your blog"}
                 </div>
             ));
         };
 
         socket.on("notification", handler);
         return () => socket.off("notification", handler);
-    }, [navigate]);
+    }, [navigate, token]);
     // fcm forground
     useEffect(() => {
+        if (!token) return;
         const messaging = getMessaging();
 
         const unsubscribe = onMessage(messaging, (payload) => {
             const { type, blogId, username } = payload.data || {};
-
             toast((t) => (
                 <div
                     className="cursor-pointer"
                     onClick={() => {
                         toast.dismiss(t.id);
                         if (type === "follow") navigate(`/@${username}`);
-                        else navigate(`/blog/${blogSlug}`);
+                        else navigate(`/blog/${blogId}`);
                     }}
                 >
                     {payload.notification?.title}
@@ -80,10 +85,11 @@ function Navbar() {
         });
 
         return () => unsubscribe();
-    }, [navigate]);
+    }, [navigate, token]);
 
     async function handleLogout() {
         await signOut(auth);
+        socket.disconnect();
         dispatch(logout())
         localStorage.removeItem("token");
         setShowPopup(false);
