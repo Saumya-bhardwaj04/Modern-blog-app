@@ -37,7 +37,7 @@ function usePagination(path, queryParams = {}, limit = 1, page = 1, token) {
       }
     }
     fetchSeachBlogs();
-  }, [page]);
+  }, [page,token]);
 
   return { blogs, setBlogs, hasMore, isLoading };
 }
