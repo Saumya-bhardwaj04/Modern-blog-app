@@ -1,47 +1,95 @@
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import { Link, Navigate } from "react-router-dom";
-import axios from "axios";
+import usePagination from "../hooks/usePagination";
 import { markNotificationRead } from "../utils/getNotification";
+
+/* ---------------- helpers ---------------- */
+
+function formatTime(date) {
+  return new Date(date).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function groupByDate(list) {
+  const today = [];
+  const lastWeek = [];
+  const older = [];
+
+  const now = new Date();
+  const weekAgo = new Date();
+  weekAgo.setDate(now.getDate() - 7);
+
+  list.forEach((n) => {
+    const d = new Date(n.createdAt);
+    if (d.toDateString() === now.toDateString()) today.push(n);
+    else if (d > weekAgo) lastWeek.push(n);
+    else older.push(n);
+  });
+
+  return { today, lastWeek, older };
+}
+
+/* -------- MERGE LOGIC (FOLLOW + LIKE + COMMENT) -------- */
+
+function mergeNotifications(notifications) {
+  const map = {};
+  const result = [];
+
+  notifications.forEach((n) => {
+    if (!n.sender) return;
+
+    // 🔑 merge key
+    let key = n.type;
+    if (n.type === "like" || n.type === "comment") {
+      key = `${n.type}-${n.blog?._id}`;
+    }
+
+    if (!map[key]) {
+      map[key] = {
+        ...n,
+        senders: [n.sender],
+      };
+    } else {
+      map[key].senders.push(n.sender);
+      if (new Date(n.createdAt) > new Date(map[key].createdAt)) {
+        map[key].createdAt = n.createdAt;
+      }
+      map[key].isRead = map[key].isRead && n.isRead;
+    }
+  });
+
+  Object.values(map).forEach((n) => result.push(n));
+
+  return result.sort(
+    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+  );
+}
+
+/* ---------------- component ---------------- */
 
 function Notifications() {
   const { token } = useSelector((state) => state.user);
-
-  const [notifications, setNotifications] = useState([]);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!token) return;
+  const {
+    blogs: rawNotifications,
+    setBlogs: setNotifications,
+    hasMore,
+    isLoading,
+  } = usePagination("notifications", {}, 5, page, token);
 
-    async function fetchNotifications() {
-      try {
-        setLoading(true);
-        const res = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/notifications`,
-          {
-            params: { limit: 10, page },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+  const mergedNotifications = useMemo(
+    () => mergeNotifications(rawNotifications),
+    [rawNotifications]
+  );
 
-        setNotifications((prev) => [
-          ...prev,
-          ...res.data.notifications,
-        ]);
-        setHasMore(res.data.hasMore);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchNotifications();
-  }, [page, token]);
+  const { today, lastWeek, older } = useMemo(
+    () => groupByDate(mergedNotifications),
+    [mergedNotifications]
+  );
 
   async function handleClick(id) {
     await markNotificationRead(id, token);
@@ -54,72 +102,94 @@ function Notifications() {
 
   if (!token) return <Navigate to="/" />;
 
-  return (
-    <div className="max-w-[600px] mx-auto p-5">
-      <h1 className="text-2xl font-semibold mb-6">Notifications</h1>
+  const Section = ({ title, items }) =>
+    items.length > 0 && (
+      <>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase mt-6 mb-3">
+          {title}
+        </h3>
 
-      {notifications.length === 0 && !loading && (
-        <p className="text-gray-500 text-center">
-          No notifications yet
-        </p>
-      )}
+        <div className="space-y-3">
+          {items.map((n) => {
+            const firstSender = n.senders?.[0] || n.sender;
+            const extra = (n.senders?.length || 1) - 1;
 
-      <div className="space-y-4 relative">
-        {notifications.map((n) => {
-          if (!n.sender) return null;
+            const link =
+              n.type === "follow"
+                ? `/@${firstSender.username}`
+                : `/blog/${n.blog?.blogId}`;
 
-          const link =
-            n.type === "follow"
-              ? `/@${n.sender.username}`
-              : `/blog/${n.blog?.blogId}`;
-
-          return (
-            <Link
-              key={n._id}
-              to={link}
-              onClick={() => handleClick(n._id)}
-            >
-              <div
-                className={`flex gap-3 p-4 rounded-xl border transition
+            return (
+              <Link
+                key={n._id}
+                to={link}
+                onClick={() => handleClick(n._id)}
+              >
+                <div
+                  className={`relative flex gap-3 p-4 rounded-xl border transition
                   ${
                     !n.isRead
                       ? "bg-blue-50 border-blue-200"
                       : "bg-white border-gray-200"
                   }
                   hover:shadow-md`}
-              >
-                <img
-                  src={
-                    n.sender.profilePic ||
-                    `https://api.dicebear.com/9.x/initials/svg?seed=${n.sender.name}`
-                  }
-                  className="w-10 h-10 rounded-full object-cover"
-                />
+                >
+                  {/* Avatar */}
+                  <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
+                    {firstSender.name[0]}
+                  </div>
 
-                <div className="text-sm">
-                  <strong>{n.sender.name}</strong>{" "}
-                  {n.type === "follow" && "started following you"}
-                  {n.type === "like" && "liked your blog"}
-                  {n.type === "comment" && "commented on your blog"}
+                  {/* Message */}
+                  <div className="flex-1 flex items-center justify-center text-center text-sm px-2">
+                    <span>
+                      <strong>{firstSender.name}</strong>
+                      {extra > 0 && <> and {extra} others</>}{" "}
+                      {n.type === "follow" && "started following you"}
+                      {n.type === "like" && "liked your blog"}
+                      {n.type === "comment" && "commented on your blog"}
+                    </span>
+                  </div>
+
+                  {/* Time */}
+                  <span className="absolute bottom-2 right-3 text-[11px] text-gray-400">
+                    {formatTime(n.createdAt)}
+                  </span>
                 </div>
-              </div>
-            </Link>
-          );
-        })}
-        {hasMore && (
-          <div className="pointer-events-none absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-white to-transparent" />
-        )}
-      </div>
+              </Link>
+            );
+          })}
+        </div>
+      </>
+    );
+
+  return (
+    <div className="max-w-[600px] mx-auto p-5">
+      <h1 className="text-2xl font-semibold mb-6">Notifications</h1>
+
+      {rawNotifications.length === 0 && !isLoading && (
+        <p className="text-center text-gray-500">
+          No notifications yet
+        </p>
+      )}
+
+      <Section title="Today" items={today} />
+      <Section title="Last week" items={lastWeek} />
+      <Section title="Older" items={older} />
 
       {hasMore && (
-        <div className="flex justify-center mt-6">
+        <div className="flex justify-center mt-8">
           <button
             onClick={() => setPage((p) => p + 1)}
-            disabled={loading}
-            className="px-6 py-2 rounded-full border text-sm hover:bg-gray-100 transition"
+            className="px-6 py-2 text-sm rounded-full border border-gray-300 hover:bg-gray-100 transition"
           >
-            {loading ? "Loading..." : "Load older notifications"}
+            Load older notifications
           </button>
+        </div>
+      )}
+
+      {isLoading && (
+        <div className="flex justify-center mt-6">
+          <span className="loader"></span>
         </div>
       )}
     </div>
