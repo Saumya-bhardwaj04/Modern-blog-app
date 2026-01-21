@@ -517,58 +517,82 @@ async function followUser(req, res) {
     try {
         const followerId = req.user;
         const { id } = req.params;
+
         if (followerId === id) {
             return res.status(400).json({
                 success: false,
                 message: "You cannot follow yourself",
             });
         }
+
         const user = await User.findById(id);
         if (!user) {
             return res.status(404).json({
                 success: false,
                 message: "User not found",
-            })
+            });
         }
+
+        const isFollowing = user.followers.includes(followerId);
+
+        if (isFollowing) {
+            await User.findByIdAndUpdate(id, {
+                $pull: { followers: followerId },
+            });
+            await User.findByIdAndUpdate(followerId, {
+                $pull: { following: id },
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "Unfollowed",
+            });
+        }
+
+        await User.findByIdAndUpdate(id, {
+            $push: { followers: followerId },
+        });
+        await User.findByIdAndUpdate(followerId, {
+            $push: { following: id },
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Followed",
+        });
+
         const io = getIO();
+
         await Notification.create({
             recipient: id,
             sender: followerId,
             type: "follow",
         });
-        io.to(id).emit("notification", { type: "follow", sender: followerId });
-        const follower = await User.findById(followerId).select("name");
-        sendPush(
-            user.fcmTokens,
-            "New follower 👤",
-            `${follower.name} started following you`,
-            { type: "follow", followerId }
-        );
-        if (!user.followers.includes(followerId)) {
-            await User.findByIdAndUpdate(id, { $push: { followers: followerId } });
-            await User.findByIdAndUpdate(followerId, { $push: { following: id } });
 
-            return res.status(200).json({
-                success: true,
-                message: "Followed",
-            })
-        } else {
-            await User.findByIdAndUpdate(id, { $pull: { followers: followerId } });
-            await User.findByIdAndUpdate(followerId, { $pull: { following: id } });
+        const sender = await User.findById(followerId).select("name username");
 
-            return res.status(200).json({
-                success: true,
-                message: "Unfollowed",
-            })
+        io.to(id.toString()).emit("notification", {
+            type: "follow",
+            sender,
+        });
+
+        if (user.fcmTokens?.length) {
+            sendPush(
+                user.fcmTokens,
+                "New follower 👤",
+                `${sender.name} started following you`,
+                { type: "follow", username: sender.username }
+            );
         }
-    }
-    catch (error) {
-        return res.status(500).json({
+    } catch (err) {
+        console.error("FOLLOW ERROR:", err);
+        res.status(500).json({
             success: false,
-            message: error.message,
-        })
+            message: "Server error",
+        });
     }
 }
+
 async function changeSavedLikedBlog(req, res) {
     try {
         const userId = req.user;
@@ -594,16 +618,16 @@ async function changeSavedLikedBlog(req, res) {
     }
 }
 async function saveFcmToken(req, res) {
-  const userId = req.user;
-  const { token } = req.body;
+    const userId = req.user;
+    const { token } = req.body;
 
-  if (!token) return res.sendStatus(400);
+    if (!token) return res.sendStatus(400);
 
-  await User.findByIdAndUpdate(userId, {
-    $addToSet: { fcmTokens: token },
-  });
+    await User.findByIdAndUpdate(userId, {
+        $addToSet: { fcmTokens: token },
+    });
 
-  res.sendStatus(200);
+    res.sendStatus(200);
 }
 
 module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken };
