@@ -62,6 +62,13 @@ async function createBlog(req, res) {
                 blog,
             })
         }
+        const io = getIO();
+        if (!draft) {
+            const populatedBlog = await Blog.findById(blog._id)
+                .populate("creator", "name username profilePic");
+
+            io.emit("blog:new", populatedBlog);
+        }
         return res.status(200).json({
             success: true,
             message: "Blog created Successfully",
@@ -289,6 +296,10 @@ async function likeBlog(req, res) {
                 type: "like",
                 sender: senderUser,
                 blogSlug: blog.blogId,
+            });
+            io.emit("blog:like", {
+                blogId: blog._id,
+                likesCount: blog.likes.length,
             });
 
             if (creator.fcmTokens?.length) {

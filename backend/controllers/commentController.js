@@ -61,6 +61,9 @@ async function addComment(req, res) {
                 sender,
                 blogSlug: blog.blogId,
             });
+            io.emit("blog:comment", {
+                blogId: blog._id,
+            });
 
             if (creator.fcmTokens?.length) {
                 sendPush(

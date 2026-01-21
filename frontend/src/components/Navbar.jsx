@@ -75,8 +75,15 @@ function Navbar() {
                     className="cursor-pointer"
                     onClick={() => {
                         toast.dismiss(t.id);
-                        if (type === "follow") navigate(`/@${username}`);
-                        else navigate(`/blog/${blogSlug}`);
+                        if (type === "comment") {
+                            navigate("/notifications");
+                        }
+                        else if (type === "follow") {
+                            navigate(`/@${username}`);
+                        }
+                        else {
+                            navigate(`/blog/${blogSlug}`);
+                        }
                     }}
                 >
                     {payload.notification?.title}

@@ -33,7 +33,7 @@ function usePagination(path, queryParams = {}, limit = 1, page = 1) {
     fetchSeachBlogs();
   }, [page]);
 
-  return { blogs, hasMore, isLoading };
+  return { blogs, setBlogs, hasMore, isLoading };
 }
 
 export default usePagination;

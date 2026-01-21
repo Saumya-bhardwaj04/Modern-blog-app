@@ -3,11 +3,40 @@ import { useSelector } from "react-redux";
 import DisplayBlogs from "./DisplayBlogs";
 import usePagination from "../hooks/usePagination";
 import { Link, Navigate } from "react-router-dom";
+import socket from "../utils/socket";
 
 function HomePage() {
     const [page, setPage] = useState(1);
     const { token, id: userId } = useSelector((state) => state.user);
-    const { blogs, hasMore, isLoading } = usePagination("blogs", {}, 4, page);
+    const { blogs, setBlogs, hasMore, isLoading } = usePagination("blogs", {}, 4, page);
+    useEffect(() => {
+        socket.on("blog:new", (blog) => {
+            setBlogs((prev) => [blog, ...prev]);
+        });
+        socket.on("blog:like", ({ blogId, likesCount }) => {
+            setBlogs((prev) =>
+                prev.map((b) =>
+                    b._id === blogId ? { ...b, likes: Array(likesCount) } : b
+                )
+            );
+        });
+        socket.on("blog:comment", ({ blogId }) => {
+            setBlogs((prev) =>
+                prev.map((b) =>
+                    b._id === blogId
+                        ? { ...b, comments: [...b.comments, {}] }
+                        : b
+                )
+            );
+        });
+
+        return () => {
+            socket.off("blog:new");
+            socket.off("blog:like");
+            socket.off("blog:comment");
+        };
+    }, []);
+
 
     return token == null ?
         (<Navigate to={"/"} />
