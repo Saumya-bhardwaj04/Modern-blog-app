@@ -168,7 +168,7 @@ function Navbar() {
                         />
                     )}
                     <i
-                        className="fi fi-rr-search text-xl sm:hidden cursor-pointer"
+                        className="fi fi-rr-search text-2xl sm:hidden cursor-pointer"
                         onClick={() => setShowSearchBar((prev) => !prev)}
                     ></i>
                     <Link
