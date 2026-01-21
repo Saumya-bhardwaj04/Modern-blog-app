@@ -1,43 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link, Navigate } from "react-router-dom";
-import { fetchNotifications, markNotificationRead } from "../utils/getNotification";
+import axios from "axios";
+import { markNotificationRead } from "../utils/getNotification";
 
-/* ---------------- helpers ---------------- */
+/* ---------- helpers ---------- */
 
 function formatTime(date) {
-  return new Date(date).toLocaleTimeString([], {
+  return new Date(date).toLocaleString([], {
     hour: "2-digit",
     minute: "2-digit",
+    day: "numeric",
+    month: "short",
   });
 }
 
-function groupByDate(list) {
-  const today = [];
-  const lastWeek = [];
-  const older = [];
-
-  const now = new Date();
-  const weekAgo = new Date();
-  weekAgo.setDate(now.getDate() - 7);
+/* merge same notification */
+function mergeNotifications(list) {
+  const map = new Map();
 
   list.forEach((n) => {
-    const d = new Date(n.createdAt);
-    if (d.toDateString() === now.toDateString()) today.push(n);
-    else if (d > weekAgo) lastWeek.push(n);
-    else older.push(n);
-  });
-
-  return { today, lastWeek, older };
-}
-
-/* -------- MERGE FOLLOW + LIKE + COMMENT -------- */
-
-function mergeNotifications(notifications) {
-  const map = {};
-  const result = [];
-
-  notifications.forEach((n) => {
     if (!n.sender) return;
 
     let key = n.type;
@@ -45,135 +27,149 @@ function mergeNotifications(notifications) {
     if (n.type === "like" || n.type === "comment") {
       key = `${n.type}-${n.blog?._id}`;
     }
+    if (n.type === "follow") {
+      key = `follow-${n.sender._id}`;
+    }
 
-    if (!map[key]) {
-      map[key] = {
-        ...n,
-        senders: [n.sender],
-      };
+    if (!map.has(key)) {
+      map.set(key, n);
     } else {
-      map[key].senders.push(n.sender);
-      map[key].isRead = map[key].isRead && n.isRead;
-
-      if (new Date(n.createdAt) > new Date(map[key].createdAt)) {
-        map[key].createdAt = n.createdAt;
+      const existing = map.get(key);
+      if (new Date(n.createdAt) > new Date(existing.createdAt)) {
+        map.set(key, { ...existing, createdAt: n.createdAt });
       }
     }
   });
 
-  Object.values(map).forEach((n) => result.push(n));
-
-  return result.sort(
+  return Array.from(map.values()).sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
   );
 }
 
-/* ---------------- component ---------------- */
+/* ---------- component ---------- */
 
 function Notifications() {
   const { token } = useSelector((state) => state.user);
+
   const [notifications, setNotifications] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!token) return;
 
-    // fetch last 12 notifications only
-    fetchNotifications(token).then((res) => {
-      const list = res.notifications || [];
-      setNotifications(list.slice(0, 12));
-    });
-  }, [token]);
+    async function fetchNotifications() {
+      try {
+        setLoading(true);
+        const res = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/notifications`,
+          {
+            params: { limit: 6, page },
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-  const merged = useMemo(
-    () => mergeNotifications(notifications),
-    [notifications]
-  );
+        setNotifications((prev) => [...prev, ...res.data.notifications]);
+        setHasMore(res.data.hasMore);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
 
-  const { today, lastWeek, older } = useMemo(
-    () => groupByDate(merged),
-    [merged]
-  );
+    fetchNotifications();
+  }, [page, token]);
 
   async function handleClick(id) {
     await markNotificationRead(id, token);
     setNotifications((prev) =>
-      prev.map((n) =>
-        n._id === id ? { ...n, isRead: true } : n
-      )
+      prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
     );
   }
 
+  const mergedNotifications = useMemo(
+    () => mergeNotifications(notifications),
+    [notifications]
+  );
+
   if (!token) return <Navigate to="/" />;
 
-  const Section = ({ title, items }) =>
-    items.length > 0 && (
-      <>
-        <h3 className="text-xs font-semibold text-gray-500 uppercase mt-6 mb-3">
-          {title}
-        </h3>
+  return (
+    <div className="max-w-[600px] mx-auto p-5">
+      <h1 className="text-2xl font-semibold mb-6">Notifications</h1>
 
-        <div className="space-y-3">
-          {items.map((n) => {
-            const firstSender = n.senders?.[0] || n.sender;
-            const extra = (n.senders?.length || 1) - 1;
+      {mergedNotifications.length === 0 && !loading && (
+        <p className="text-gray-500 text-center">No notifications yet</p>
+      )}
 
-            const link =
-              n.type === "follow"
-                ? `/@${firstSender.username}`
-                : `/blog/${n.blog?.blogId}`;
+      <div className="space-y-4 relative">
+        {mergedNotifications.map((n) => {
+          if (!n.sender) return null;
 
-            return (
-              <Link key={n._id} to={link} onClick={() => handleClick(n._id)}>
-                <div
-                  className={`relative flex gap-3 p-4 rounded-xl border transition
+          const link =
+            n.type === "follow"
+              ? `/@${n.sender.username}`
+              : `/blog/${n.blog?.blogId}`;
+
+          return (
+            <Link key={n._id} to={link} onClick={() => handleClick(n._id)}>
+              <div
+                className={`relative flex gap-4 p-4 rounded-xl border transition
                   ${
                     !n.isRead
                       ? "bg-blue-50 border-blue-200"
                       : "bg-white border-gray-200"
                   }
                   hover:shadow-md`}
-                >
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
-                    {firstSender.name[0]}
-                  </div>
+              >
+                {/* avatar */}
+                <img
+                  src={
+                    n.sender.profilePic ||
+                    `https://api.dicebear.com/9.x/initials/svg?seed=${n.sender.name}`
+                  }
+                  className="w-10 h-10 rounded-full object-cover"
+                />
 
-                  {/* Center message */}
-                  <div className="flex-1 flex items-center justify-center text-center text-sm px-2">
-                    <span>
-                      <strong>{firstSender.name}</strong>
-                      {extra > 0 && <> and {extra} others</>}{" "}
-                      {n.type === "follow" && "started following you"}
-                      {n.type === "like" && "liked your blog"}
-                      {n.type === "comment" && "commented on your blog"}
-                    </span>
-                  </div>
-
-                  {/* Time */}
-                  <span className="absolute bottom-2 right-3 text-[11px] text-gray-400">
-                    {formatTime(n.createdAt)}
+                {/* centered message */}
+                <div className="flex-1 flex items-center justify-center text-center text-sm">
+                  <span>
+                    <strong>{n.sender.name}</strong>{" "}
+                    {n.type === "follow" && "started following you"}
+                    {n.type === "like" && "liked your blog"}
+                    {n.type === "comment" && "commented on your blog"}
                   </span>
                 </div>
-              </Link>
-            );
-          })}
+
+                {/* time */}
+                <span className="absolute bottom-2 right-3 text-[11px] text-gray-400">
+                  {formatTime(n.createdAt)}
+                </span>
+              </div>
+            </Link>
+          );
+        })}
+
+        {hasMore && (
+          <div className="pointer-events-none absolute bottom-0 left-0 w-full h-16 bg-gradient-to-t from-white to-transparent" />
+        )}
+      </div>
+
+      {hasMore && (
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            disabled={loading}
+            className="px-6 py-2 rounded-full border text-sm hover:bg-gray-100 transition"
+          >
+            {loading ? "Loading..." : "Load older notifications"}
+          </button>
         </div>
-      </>
-    );
-
-  return (
-    <div className="max-w-[600px] mx-auto p-5">
-      <h1 className="text-2xl font-semibold mb-6">Notifications</h1>
-
-      {merged.length === 0 && (
-        <p className="text-center text-gray-500">
-          No notifications yet
-        </p>
       )}
-
-      <Section title="Today" items={today} />
-      <Section title="Last week" items={lastWeek} />
-      <Section title="Older" items={older} />
     </div>
   );
 }
