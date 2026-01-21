@@ -5,8 +5,8 @@ let io;
 
 function initSocket(server) {
   const allowedOrigins = ALLOWED_ORIGINS
-  ? ALLOWED_ORIGINS.split(",").map(o => o.trim())
-  : [];
+    ? ALLOWED_ORIGINS.split(",").map(o => o.trim())
+    : [];
 
   io = new Server(server, {
     cors: {
@@ -15,6 +15,7 @@ function initSocket(server) {
       ],
       credentials: true,
     },
+    transports: ["websocket"],
   });
 
   io.on("connection", (socket) => {
