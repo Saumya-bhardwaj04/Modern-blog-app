@@ -8,7 +8,11 @@ function Notifications() {
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
-    fetchNotifications(token).then(setNotifications);
+    if (!token) return;
+
+    fetchNotifications(token).then((res) => {
+      setNotifications(res || []);
+    });
   }, [token]);
 
   return (
@@ -17,21 +21,28 @@ function Notifications() {
 
       {notifications.length === 0 && <p>No notifications yet</p>}
 
-      {notifications.map((n) => (
-        <Link
-          key={n._id}
-          to={n.blog ? `/blog/${n.blog._id}` : `/@${n.sender.username}`}
-        >
-          <div className={`p-3 border-b ${!n.isRead ? "bg-blue-50" : ""}`}>
-            <p className="font-medium">
-              {n.sender?.name}{" "}
-              {n.type === "follow" && "started following you"}
-              {n.type === "like" && "liked your blog"}
-              {n.type === "comment" && "commented on your blog"}
-            </p>
-          </div>
-        </Link>
-      ))}
+      {notifications.map((n) => {
+        const link =
+          n.type === "follow"
+            ? `/@${n.sender.username}`
+            : `/blog/${n.blog?._id}`;
+
+        return (
+          <Link key={n._id} to={link}>
+            <div
+              className={`p-3 border-b cursor-pointer ${!n.isRead ? "bg-blue-50" : ""
+                }`}
+            >
+              <p className="font-medium">
+                <strong>{n.sender?.name}</strong>{" "}
+                {n.type === "follow" && "started following you"}
+                {n.type === "like" && "liked your blog"}
+                {n.type === "comment" && "commented on your blog"}
+              </p>
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }

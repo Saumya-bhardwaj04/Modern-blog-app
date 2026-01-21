@@ -285,9 +285,12 @@ async function likeBlog(req, res) {
             const sender = await User.findById(userId).select("name username");
             const creator = await User.findById(blog.creator).select("fcmTokens");
 
+            const senderUser = await User.findById(userId)
+                .select("name username profilePic");
+
             io.to(blog.creator.toString()).emit("notification", {
                 type: "like",
-                sender,
+                sender: senderUser,
                 blogId: blog._id.toString(),
             });
 
@@ -308,7 +311,6 @@ async function likeBlog(req, res) {
         });
     }
 }
-
 async function saveBlog(req, res) {
     try {
         const user = req.user;

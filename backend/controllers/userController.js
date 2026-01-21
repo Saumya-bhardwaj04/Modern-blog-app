@@ -560,30 +560,33 @@ async function followUser(req, res) {
             success: true,
             message: "Followed",
         });
+        if (blog.creator.toString() !== userId.toString()) {
 
-        const io = getIO();
+            const io = getIO();
 
-        await Notification.create({
-            recipient: id,
-            sender: followerId,
-            type: "follow",
-        });
+            await Notification.create({
+                recipient: id,
+                sender: followerId,
+                type: "follow",
+            });
 
-        const sender = await User.findById(followerId).select("name username");
+            const sender = await User.findById(followerId).select("name username");
 
-        io.to(id.toString()).emit("notification", {
-            type: "follow",
-            sender,
-        });
+            io.to(id.toString()).emit("notification", {
+                type: "follow",
+                sender,
+            });
 
-        if (user.fcmTokens?.length) {
-            sendPush(
-                user.fcmTokens,
-                "New follower 👤",
-                `${sender.name} started following you`,
-                { type: "follow", username: sender.username }
-            );
+            if (user.fcmTokens?.length) {
+                sendPush(
+                    user.fcmTokens,
+                    "New follower 👤",
+                    `${sender.name} started following you`,
+                    { type: "follow", username: sender.username }
+                );
+            }
         }
+
     } catch (err) {
         console.error("FOLLOW ERROR:", err);
         res.status(500).json({

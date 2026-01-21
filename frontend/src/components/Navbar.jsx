@@ -12,22 +12,76 @@ import { getMessaging, onMessage } from "firebase/messaging";
 function Navbar() {
     const { token, name, profilePic, username, id: userId } = useSelector((state) => state.user);
     const navigate = useNavigate();
+    const dispatch = useDispatch()
+    const location = useLocation();
     const [showPopup, setShowPopup] = useState(false);
     const [searchQuery, setSearchQuery] = useState(null);
     const [showSearchBar, setShowSearchBar] = useState(false);
-    const location = useLocation();
-    const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup";
+    const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup" || location.pathname === "/notifcations";
+    //socket connection
+    useEffect(() => {
+        if (!userId) return;
+        socket.connect();
+        socket.emit("join", userId);
+        return () => {
+            socket.disconnect();
+        };
+    }, [userId]);
+    // socket notification listener
+    useEffect(() => {
+        const handler = (data) => {
+            if (!data?.sender?.name) return;
 
+            toast((t) => (
+                <div
+                    className="cursor-pointer"
+                    onClick={() => {
+                        toast.dismiss(t.id);
+
+                        if (data.type === "follow") {
+                            navigate(`/@${data.sender.username}`);
+                        } else {
+                            navigate(`/blog/${data.blogId}`);
+                        }
+                    }}
+                >
+                    <strong>{data.sender.name}</strong>{" "}
+                    {data.type === "follow"
+                        ? "started following you"
+                        : data.type === "like"
+                            ? "liked your blog"
+                            : "commented on your blog"}
+                </div>
+            ));
+        };
+
+        socket.on("notification", handler);
+        return () => socket.off("notification", handler);
+    }, [navigate]);
+    // fcm forground
     useEffect(() => {
         const messaging = getMessaging();
+
         const unsubscribe = onMessage(messaging, (payload) => {
-            toast(payload.notification?.title);
+            const { type, blogId, username } = payload.data || {};
+
+            toast((t) => (
+                <div
+                    className="cursor-pointer"
+                    onClick={() => {
+                        toast.dismiss(t.id);
+                        if (type === "follow") navigate(`/@${username}`);
+                        else navigate(`/blog/${blogId}`);
+                    }}
+                >
+                    {payload.notification?.title}
+                </div>
+            ));
         });
 
         return () => unsubscribe();
     }, [navigate]);
 
-    const dispatch = useDispatch()
     async function handleLogout() {
         await signOut(auth);
         dispatch(logout())
@@ -46,38 +100,14 @@ function Navbar() {
             }
         };
     }, [window.location.pathname]);
-    useEffect(() => {
-        if (!userId) return;
-        socket.connect();
-        socket.emit("join", userId);
-        return () => {
-            socket.disconnect();
-        };
-    }, [userId]);
 
-    // 🔔 listen for notifications
-    useEffect(() => {
-        const handler = (data) => {
-            if (!data?.sender?.name) return;
-
-            toast.success(
-                data.type === "follow"
-                    ? `${data.sender.name} followed you`
-                    : data.type === "like"
-                        ? `${data.sender.name} liked your blog`
-                        : `${data.sender.name} commented on your blog`
-            );
-        };
-        socket.on("notification", handler);
-        return () => socket.off("notification", handler);
-    }, []);
     return (
         <>
             <div className="sticky top-0 z-50 bg-white max-w-full flex justify-between items-center h-[70px] px-2 sm:px-[30px]  border-b drop-shadow-sm">
                 <div className="flex gap-4 items-center relative">
                     <Link to={token ? "/home" : "/"}>
                         <div className="">
-                            <img src={logo} alt="" />
+                            <img src={logo} alt="logo" />
                         </div>
                     </Link>
                     <div
@@ -115,10 +145,13 @@ function Navbar() {
                 </div>
 
                 <div className="flex gap-5 justify-center items-center">
-                    <i
-                        className="fi fi-rr-bell cursor-pointer"
-                        onClick={() => navigate("/notifications")}
-                    />
+                    {isStartPage && (
+                        <i
+                            className="fi fi-rr-bell cursor-pointer"
+                            onClick={() => navigate("/notifications")}
+                        />
+                    )}
+
                     <i
                         className="fi fi-rr-search text-xl sm:hidden cursor-pointer"
                         onClick={() => setShowSearchBar((prev) => !prev)}
