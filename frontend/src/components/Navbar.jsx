@@ -20,16 +20,18 @@ function Navbar() {
     const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup";
     //socket connection
     useEffect(() => {
-        if (!userId) {
+        if (!userId || !token) {
+            socket.off("notification");
             socket.disconnect();
             return;
         }
         socket.connect();
         socket.emit("join", userId);
         return () => {
+            socket.off("notification");
             socket.disconnect();
         };
-    }, [userId]);
+    }, [userId, token]);
     // socket notification listener
     useEffect(() => {
         if (!token) return;
@@ -69,6 +71,7 @@ function Navbar() {
         const messaging = getMessaging();
 
         const unsubscribe = onMessage(messaging, (payload) => {
+            if (!token) return;
             const { type, blogSlug, username } = payload.data || {};
             toast((t) => (
                 <div

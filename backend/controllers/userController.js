@@ -217,7 +217,7 @@ async function googleAuth(req, res) {
         })
         return res.status(200).json({
             success: true,
-            message: "Welcome! Your account has been created successfully🎉",
+            message: `Welcome to Meloque, ${newUser.name} 👋`,
             user: {
                 id: newUser._id,
                 name: newUser.name,
