@@ -202,9 +202,6 @@ function Navbar() {
                             <Link to={`/@${username}`}>
                                 <p className="popup rounded-t-xl">Profile</p>
                             </Link>
-                            <Link to={`/edit-profile`}>
-                                <p className="popup ">Edit Profile</p>
-                            </Link>
                             <Link to={"/setting"}>
                                 <p className="popup"> Setting</p>
                             </Link>
