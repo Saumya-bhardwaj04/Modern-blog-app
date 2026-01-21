@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import useLoader from "./useLoader";
 
-function usePagination(path, queryParams = {}, limit = 1, page = 1, token) {
+function usePagination(path, queryParams = {}, limit = 1, page = 1,options = {}) {
   const [hasMore, setHasMore] = useState(true);
   const [blogs, setBlogs] = useState([]);
   const navigate = useNavigate();
@@ -12,15 +12,12 @@ function usePagination(path, queryParams = {}, limit = 1, page = 1, token) {
   useEffect(() => {
     async function fetchSeachBlogs() {
       try {
-        if (!token) return;
         startLoading();
         let res = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/${path}`,
           {
             params: { ...queryParams, limit, page },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            ...options,
           }
         );
         const items = res.data.notifications || res.data.blogs || [];
@@ -37,7 +34,7 @@ function usePagination(path, queryParams = {}, limit = 1, page = 1, token) {
       }
     }
     fetchSeachBlogs();
-  }, [page,token]);
+  }, [page]);
 
   return { blogs, setBlogs, hasMore, isLoading };
 }

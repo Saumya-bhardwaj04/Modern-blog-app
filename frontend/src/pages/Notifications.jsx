@@ -1,4 +1,4 @@
-import { useEffect,useState } from "react";
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { Link, Navigate } from "react-router-dom";
 import usePagination from "../hooks/usePagination";
@@ -13,7 +13,11 @@ function Notifications() {
     setBlogs: setNotifications,
     hasMore,
     isLoading,
-  } = usePagination("notifications", {}, 5, page,token);
+  } = usePagination("notifications", {}, 5, page, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
   async function handleClick(id) {
     await markNotificationRead(id, token);

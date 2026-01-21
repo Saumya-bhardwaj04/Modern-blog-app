@@ -2,8 +2,6 @@ import { Link } from "react-router-dom";
 import formateDate from "../utils/formateDate";
 import { useSelector } from "react-redux";
 import { handleSaveBlogs } from "../pages/BlogPage";
-import { useState } from "react";
-
 
 function DisplayBlogs({ blogs }) {
   const { token, id: userId } = useSelector((state) => state.user);
