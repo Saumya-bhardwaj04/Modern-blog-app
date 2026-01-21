@@ -5,6 +5,9 @@ const Comment = require("../models/commentSchema");
 const ShortUniqueId = require("short-unique-id");
 const { randomUUID } = new ShortUniqueId({ length: 10 })
 const { getIO } = require("../socket");
+const Notification = require("../models/notificationSchema");
+const sendPush = require("../utils/sendPush");
+
 
 async function createBlog(req, res) {
     try {
@@ -265,14 +268,8 @@ async function likeBlog(req, res) {
 
         await blog.save();
 
-        res.status(200).json({
-            success: true,
-            isLiked: !alreadyLiked,
-            likesCount: blog.likes.length,
-        });
-
         // 🔔 notify only when liked & not self
-        if (!alreadyLiked && blog.creator.toString() !== userId.toString()) {
+        if (blog.creator.toString() !== userId.toString()) {
             const io = getIO();
 
             await Notification.create({
@@ -303,6 +300,11 @@ async function likeBlog(req, res) {
                 );
             }
         }
+        res.status(200).json({
+            success: true,
+            isLiked: !alreadyLiked,
+            likesCount: blog.likes.length,
+        });
     } catch (err) {
         console.error("LIKE BLOG ERROR:", err);
         res.status(500).json({

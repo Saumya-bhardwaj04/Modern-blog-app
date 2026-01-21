@@ -560,7 +560,7 @@ async function followUser(req, res) {
             success: true,
             message: "Followed",
         });
-        if (blog.creator.toString() !== userId.toString()) {
+        if (id.toString() !== followerId.toString()) {
 
             const io = getIO();
 

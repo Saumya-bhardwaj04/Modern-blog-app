@@ -1,6 +1,9 @@
 const Blog = require("../models/blogSchema");
 const Comment = require("../models/commentSchema");
 const { getIO } = require("../socket");
+const Notification = require("../models/notificationSchema");
+const sendPush = require("../utils/sendPush");
+const User = require("../models/userSchema");
 
 async function addComment(req, res) {
     try {
