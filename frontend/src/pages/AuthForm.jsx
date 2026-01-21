@@ -23,7 +23,6 @@ function AuthForm({ type }) {
 
     const handled = useRef(false);
     const toastShown = useRef(false);
-    const messaging = getMessaging();
 
     useEffect(() => {
         if (location.state?.toast) {
@@ -46,10 +45,12 @@ function AuthForm({ type }) {
             } else {
                 dispatch(login(res.data.user));
                 toast.success(res.data.message);
-                await registerFcmToken(res.data.user.token);
                 const redirectTo =
                     new URLSearchParams(location.search).get("redirect") || "/home";
                 navigate(redirectTo);
+                setTimeout(() => {
+                    registerFcmToken(res.data.user.token);
+                }, 0);
             }
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong");
@@ -75,10 +76,12 @@ function AuthForm({ type }) {
                 toast.success(res.data.message);
                 toastShown.current = true;
             }
-            await registerFcmToken(res.data.user.token);
             const redirectTo =
                 new URLSearchParams(location.search).get("redirect") || "/home";
             navigate(redirectTo);
+            setTimeout(() => {
+                registerFcmToken(res.data.user.token);
+            }, 0);
         } catch (error) {
             toast.error(error.response?.data?.message || "Google authentication failed");
             if (type === "signup") {
@@ -92,6 +95,7 @@ function AuthForm({ type }) {
     }
     async function registerFcmToken(authToken) {
         try {
+            if (!("Notification" in window)) return;
             const permission = await Notification.requestPermission();
             if (permission !== "granted") return;
 
@@ -115,13 +119,11 @@ function AuthForm({ type }) {
         }
     }
 
-
     useEffect(() => {
         async function handleRedirect() {
             if (handled.current) return;
             const user = await handleRedirectResult();
             if (!user) return;
-            if (handled.current) return;
             handled.current = true;
             try {
                 const idToken = await user.getIdToken();
