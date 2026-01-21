@@ -201,15 +201,15 @@ function Navbar() {
                             className="w-[150px] bg-gray-50 border absolute z-40 right-2 drop-shadow-md top-14 rounded-xl">
                             <Link to={`/@${username}`}>
                                 <p className="popup rounded-t-xl flex items-center gap-2">
-                                    <i className="fi fi-rr-user"></i>Profile</p>
+                                    <i className="fi fi-rr-user mt-1"></i>Profile</p>
                             </Link>
                             <Link to={"/setting"}>
                                 <p className="popup flex items-center gap-2"> 
-                                    <i className="fi fi-rr-settings"></i>Setting</p>
+                                    <i className="fi fi-rr-settings mt-1"></i>Setting</p>
                             </Link>
                             <hr className="my-1 border-gray-200"/>
                             <p className="popup rounded-b-xl flex items-center gap-2" onClick={handleLogout}>
-                                <i className="fi fi-rr-sign-out"></i>Logout
+                                <i className="fi fi-rr-sign-out-alt mt-1"></i>Logout
                             </p>
                         </div>) : null
                 }
