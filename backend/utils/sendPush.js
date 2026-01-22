@@ -5,19 +5,15 @@ async function sendPush(tokens, title, body, data = {}) {
 
   try {
     const safeData = Object.fromEntries(
-      Object.entries({
-        title,
-        body,
-        url: data.url || "/home",
-        type: data.type || "",
-        blogId: data.blogSlug || "",
-        username: data.username || "",
-        image: data.image || "",
-      }).map(([k, v]) => [k, String(v)])
+      Object.entries(data).map(([k, v]) => [k, String(v)])
     );
     await admin.messaging().sendEachForMulticast({
       tokens,
-      data: safeData,
+      data: {
+        title,
+        body,
+        ...safeData,
+      }
     });
   } catch (err) {
     console.error("Push error:", err.message);
