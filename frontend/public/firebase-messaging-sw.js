@@ -10,40 +10,61 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
-self.addEventListener("install", () => {
-  self.skipWaiting();
-});
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
-});
-
+/**
+ * 🔔 BACKGROUND NOTIFICATION
+ * data fields MUST be strings
+ */
 messaging.onBackgroundMessage((payload) => {
+  console.log("[SW] Background message:", payload);
 
-  self.registration.showNotification(
-    payload.data.title,
-    {
-      body: payload.data.body,
-      icon: "/logo192.png",
-      data: {
-        force: "/notifications"
-      }
-    }
-  );
+  const title = payload.data?.title || "New notification";
+  const body = payload.data?.body || "";
+
+  self.registration.showNotification(title, {
+    body,
+    icon: "/logo192.png",
+    badge: "/badge.png",
+
+    // 👇 STRING ONLY
+    data: {
+      type: payload.data?.type || "",
+      blogSlug: payload.data?.blogSlug || "",
+      username: payload.data?.username || "",
+    },
+  });
 });
 
+/**
+ * 👉 HANDLE CLICK
+ */
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const url = new URL("/notifications", self.location.origin).href;
+  const { type, blogSlug, username } = event.notification.data || {};
+
+  let url = "/notifications";
+
+  if (type === "like" && blogSlug) {
+    url = `/blog/${blogSlug}`;
+  } 
+  else if (type === "follow" && username) {
+    url = `/@${username}`;
+  } 
+  else if (type === "comment") {
+    url = "/notifications";
+  }
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
       for (const client of clientsArr) {
-        client.navigate(url);
-        return client.focus();
+        if ("focus" in client) {
+          client.navigate(url);
+          return client.focus();
+        }
       }
       return clients.openWindow(url);
     })
   );
 });
+
