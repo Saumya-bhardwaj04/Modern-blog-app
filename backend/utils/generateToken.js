@@ -3,8 +3,7 @@ const dotenv = require("dotenv");
 const { JWT_SECRET } = require("../config/dotenv.config");
 dotenv.config();
 async function generateJWT(payload) {
-    let token = await jwt.sign(payload, JWT_SECRET,{ expiresIn: '1d' });
-    
+    let token = await jwt.sign(payload, JWT_SECRET);
     return token
 }
 async function verifyJWT(token) {

@@ -112,7 +112,7 @@ function Notifications() {
         : `/blog/${n.blog?.blogId}`;
 
     return (
-      <Link key={n._id} to={link} onClick={() => handleClick(n._id)}>
+      <Link key={n._id} to={link} onClick={() => handleClick(n._id)} className="block">
         <div
           className={`relative flex items-center gap-2 p-4 rounded-xl border
           ${!n.isRead
@@ -158,7 +158,7 @@ function Notifications() {
         <p className="text-xs font-semibold text-gray-500 mb-2">TODAY</p>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {mergedNotifications
           .filter((n) => isToday(n.createdAt))
           .map(renderNotification)}
@@ -171,7 +171,7 @@ function Notifications() {
         </p>
       )}
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {mergedNotifications
           .filter((n) => isThisWeek(n.createdAt))
           .map(renderNotification)}

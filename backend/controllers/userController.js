@@ -560,7 +560,7 @@ async function followUser(req, res) {
             success: true,
             message: "Followed",
         });
-        if (id.toString() !== followerId.toString()) {
+        if (!isFollowing && id.toString() !== followerId.toString()) {
 
             const io = getIO();
 
@@ -570,7 +570,7 @@ async function followUser(req, res) {
                 type: "follow",
             });
 
-            const sender = await User.findById(followerId).select("name username profilePic");
+            const sender = await User.findById(followerId).select("name username");
 
             io.to(id.toString()).emit("notification", {
                 type: "follow",

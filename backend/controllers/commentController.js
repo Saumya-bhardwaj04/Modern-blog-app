@@ -210,7 +210,7 @@ async function likeComment(req, res) {
                 blog: blog._id,
             });
 
-            const sender = await User.findById(userId).select("name username profilePic");
+            const sender = await User.findById(userId).select("name username");
             const creator = await User.findById(blog.creator).select("fcmTokens");
 
             io.to(blog.creator.toString()).emit("notification", {
