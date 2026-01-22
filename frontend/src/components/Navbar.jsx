@@ -8,6 +8,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../utils/firebase.js";
 import socket from "../utils/socket";
 import { getMessaging, onMessage } from "firebase/messaging";
+import NotificationToast from "./NotificationToast.jsx";
 
 function Navbar() {
     const { token, name, profilePic, username, id: userId } = useSelector((state) => state.user);
@@ -36,10 +37,8 @@ function Navbar() {
     useEffect(() => {
         if (!token) return;
         const handler = (data) => {
-            if (!data?.sender?.name) return;
             toast((t) => (
-                <div
-                    className="cursor-pointer"
+                <NotificationToast data={data}
                     onClick={() => {
                         toast.dismiss(t.id);
 
@@ -53,14 +52,12 @@ function Navbar() {
                             navigate(`/@${data.sender.username}`);
                         }
                     }}
-                >
-                    <strong>{data.sender.name}</strong>{" "}
-                    {data.type === "follow" && "started following you"}
-                    {data.type === "like" && "liked your blog"}
-                    {data.type === "comment" && "commented on your blog"}
-                </div>
-            ));
-        };
+                />
+            ), {
+                position: "top-center",
+                duration: 5000,
+            });
+        }
 
         socket.on("notification", handler);
         return () => socket.off("notification", handler);
@@ -204,10 +201,10 @@ function Navbar() {
                                     <i className="fi fi-rr-user mt-1"></i>Profile</p>
                             </Link>
                             <Link to={"/setting"}>
-                                <p className="popup flex items-center gap-2"> 
+                                <p className="popup flex items-center gap-2">
                                     <i className="fi fi-rr-settings mt-1"></i>Setting</p>
                             </Link>
-                            <hr className="my-1 border-gray-200"/>
+                            <hr className="my-1 border-gray-200" />
                             <p className="popup rounded-b-xl flex items-center gap-2" onClick={handleLogout}>
                                 <i className="fi fi-rr-sign-out-alt mt-1"></i>Logout
                             </p>

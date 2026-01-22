@@ -26,7 +26,7 @@ messaging.onBackgroundMessage((payload) => {
       body: payload.data.body,
       icon: "/logo192.png",
       data: {
-        screen: "/notifications"
+        force: "/notifications"
       }
     }
   );
