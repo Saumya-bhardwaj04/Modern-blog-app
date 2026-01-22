@@ -18,28 +18,32 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
+messaging.onBackgroundMessage((payload) => {
 
-  const url = "/notifications";
-
-  event.waitUntil(
-    clients.openWindow(url)
+  self.registration.showNotification(
+    payload.data.title,
+    {
+      body: payload.data.body,
+      icon: "/logo192.png",
+      data: {
+        screen: "/notifications"
+      }
+    }
   );
 });
 
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
 
-messaging.onBackgroundMessage(payload => {
-  console.log("Background message:", payload);
+  const url = new URL("/notifications", self.location.origin).href;
 
-  self.registration.showNotification(
-    payload.notification.title,
-    {
-      body: payload.notification.body,
-      icon: "/logo192.png",
-      data: {
-        force : "/notifications"
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
+      for (const client of clientsArr) {
+        client.navigate(url);
+        return client.focus();
       }
-    }
+      return clients.openWindow(url);
+    })
   );
 });

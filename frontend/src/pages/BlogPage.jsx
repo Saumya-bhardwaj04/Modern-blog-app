@@ -64,20 +64,30 @@ function BlogPage() {
         }
     }
     async function handleLike() {
-        if (token) {
-            setIsLike((prev) => !prev)
-            let res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/blogs/like/${blogData._id}`, {}, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            })
-            dispatch(changeLikes(userId))
-            toast.success(res.data.message);
-
-        } else {
-            return toast.error("Please signin to like this blog")
+        if (!token) {
+            return toast.error("Please signin to like this blog");
+        }
+        try {
+            const res = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/blogs/like/${blogData._id}`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            setIsLike(res.data.isLiked);
+            dispatch(changeLikes({
+                userId,
+                isLiked: res.data.isLiked
+            }));
+            toast.success(res.data?.message || "Like updated");
+        } catch (error) {
+            toast.error("Failed to update like");
         }
     }
+
     async function handleDeleteBlog() {
         const confirmDelete = window.confirm(
             "Are you sure you want to delete this blog?\nThis action cannot be undone."

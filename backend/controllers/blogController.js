@@ -252,7 +252,7 @@ async function deleteBlog(req, res) {
 }
 async function likeBlog(req, res) {
     try {
-        const userId = req.user;
+        const user = req.user;
         const { id } = req.params;
 
         const blog = await Blog.findById(id);
@@ -262,60 +262,56 @@ async function likeBlog(req, res) {
                 message: "Blog not found",
             });
         }
+        const alreadyLiked = blog.likes.includes(user);
 
-        const alreadyLiked = blog.likes.includes(userId);
-
-        if (alreadyLiked) {
-            blog.likes.pull(userId);
-            await User.findByIdAndUpdate(userId, { $pull: { likeBlogs: id } });
+        if (!alreadyLiked) {
+            await Blog.findByIdAndUpdate(id, { $push: { likes: user} });
+            await User.findByIdAndUpdate(user, { $push: { likeBlogs: id } });
+            res.status(200).json({
+                success: true,
+                message: "Blog Liked successfully",
+                isLiked: true,
+            })
         } else {
-            blog.likes.push(userId);
-            await User.findByIdAndUpdate(userId, { $push: { likeBlogs: id } });
+            await Blog.findByIdAndUpdate(id, { $pull: { likes: user } });
+            await User.findByIdAndUpdate(user, { $pull: { likeBlogs: id } });
+            res.status(200).json({
+                success: true,
+                message: "Blog Disliked successfully",
+                isLiked: false,
+
+            })
         }
-
         await blog.save();
-
         // 🔔 notify only when liked & not self
-        if (!alreadyLiked && blog.creator.toString() !== userId.toString()) {
+        if (!alreadyLiked && blog.creator.toString() !== user.toString()) {
             const io = getIO();
 
             await Notification.create({
                 recipient: blog.creator,
-                sender: userId,
+                sender: user,
                 type: "like",
                 blog: blog._id,
             });
-
-            const sender = await User.findById(userId).select("name username");
             const creator = await User.findById(blog.creator).select("fcmTokens");
-
-            const senderUser = await User.findById(userId)
-                .select("name username profilePic");
+            const senderUser = await User.findById(user).select("name username profilePic");
 
             io.to(blog.creator.toString()).emit("notification", {
                 type: "like",
                 sender: senderUser,
                 blogSlug: blog.blogId,
             });
-            io.emit("blog:like", {
-                blogId: blog._id,
-                likesCount: blog.likes.length,
-            });
 
             if (creator.fcmTokens?.length) {
                 sendPush(
                     creator.fcmTokens,
                     "New like ❤️",
-                    `${sender.name} liked your blog`,
-                    { type: "like", blogSlug: blog.blogId,}
+                    `${senderUser.name} liked your blog`,
+                    { type: "like", blogSlug: blog.blogId, }
                 );
             }
         }
-        res.status(200).json({
-            success: true,
-            isLiked: !alreadyLiked,
-            likesCount: blog.likes.length,
-        });
+
     } catch (err) {
         console.error("LIKE BLOG ERROR:", err);
         res.status(500).json({

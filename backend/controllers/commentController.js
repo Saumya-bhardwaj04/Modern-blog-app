@@ -37,11 +37,6 @@ async function addComment(req, res) {
         await Blog.findByIdAndUpdate(id, {
             $push: { comments: newComment._id },
         })
-        res.status(200).json({
-            success: true,
-            message: "comment added successfully",
-            newComment,
-        });
         // 🔔 notify only if not self
         if (blog.creator.toString() !== userId.toString()) {
             const io = getIO();
@@ -70,10 +65,15 @@ async function addComment(req, res) {
                     creator.fcmTokens,
                     "New comment 💬",
                     `${sender.name} commented on your blog`,
-                    { type: "comment", blogSlug: blog.blogId}
+                    { type: "comment", blogSlug: blog.blogId }
                 );
             }
         }
+        res.status(200).json({
+            success: true,
+            message: "comment added successfully",
+            newComment,
+        });
     }
     catch (err) {
         console.error("ADD COMMENT ERROR:", err);
@@ -192,11 +192,6 @@ async function likeComment(req, res) {
 
         await comment.save();
 
-        res.status(200).json({
-            success: true,
-            isLiked: !alreadyLiked,
-        });
-
         if (
             !alreadyLiked &&
             blog.creator.toString() !== userId.toString()
@@ -224,10 +219,15 @@ async function likeComment(req, res) {
                     creator.fcmTokens,
                     "New like ❤️",
                     `${sender.name} liked a comment on your blog`,
-                    { type: "like", blogSlug: blog.blogId,}
+                    { type: "like", blogSlug: blog.blogId, }
                 );
             }
         }
+        res.status(200).json({
+            success: true,
+            message: alreadyLiked ? "Unliked successfully" : "Liked successfully",
+            isLiked: !alreadyLiked,
+        });
     } catch (err) {
         console.error("LIKE COMMENT ERROR:", err);
         res.status(500).json({
