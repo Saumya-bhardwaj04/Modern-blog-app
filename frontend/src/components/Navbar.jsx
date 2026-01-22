@@ -36,20 +36,33 @@ function Navbar() {
     // socket notification listener
     useEffect(() => {
         if (!token) return;
+
         const handler = (data) => {
+            if (!data || !data.type || !data.sender) return;
+
             toast((t) => (
-                <NotificationToast data={data}
+                <NotificationToast
+                    data={{
+                        ...data,
+                        sender: {
+                            name: data.sender?.name || "Someone",
+                            username: data.sender?.username || "",
+                            profilePic: data.sender?.profilePic || null,
+                        },
+                    }}
                     onClick={() => {
                         toast.dismiss(t.id);
 
-                        if (data.type === "comment") {
-                            navigate("/notifications");
-                        }
-                        else if (data.type === "like") {
+                        if (data.type === "like" && data.blogSlug) {
                             navigate(`/blog/${data.blogSlug}`);
                         }
-                        else if (data.type === "follow") {
+
+                        if (data.type === "follow" && data.sender?.username) {
                             navigate(`/@${data.sender.username}`);
+                        }
+
+                        if (data.type === "comment") {
+                            navigate("/notifications");
                         }
                     }}
                 />
@@ -57,11 +70,12 @@ function Navbar() {
                 position: "top-center",
                 duration: 5000,
             });
-        }
+        };
 
         socket.on("notification", handler);
         return () => socket.off("notification", handler);
     }, [navigate, token]);
+
     // fcm forground
     useEffect(() => {
         if (!token) return;
