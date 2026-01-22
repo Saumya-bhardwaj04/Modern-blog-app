@@ -179,7 +179,6 @@ function Notifications() {
 
       {hasMore && (
         <>
-          <div className="pointer-events-none absolute bottom-20 left-0 w-full h-16 bg-gradient-to-t from-white to-transparent" />
           <div className="flex justify-center mt-6">
             <button
               onClick={() => setPage((p) => p + 1)}

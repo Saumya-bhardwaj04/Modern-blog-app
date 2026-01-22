@@ -13,17 +13,7 @@ const messaging = firebase.messaging();
 
 self.addEventListener("notificationclick", function (event) {
   event.notification.close();
-
-  const data = event.notification.data || {};
-  let url = "/home";
-
-  if (data.type === "like" || data.type === "comment") {
-    url = `/blog/${data.blogId}`;
-  }
-
-  if (data.type === "follow") {
-    url = `/@${data.username}`;
-  }
+  let url = "/notifications";
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
@@ -33,9 +23,7 @@ self.addEventListener("notificationclick", function (event) {
           return client.focus();
         }
       }
-      if (clients.openWindow) {
         return clients.openWindow(url);
-      }
     })
   );
 });
