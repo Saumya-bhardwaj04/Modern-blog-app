@@ -8,7 +8,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../utils/firebase.js";
 import socket from "../utils/socket";
 import { getMessaging, onMessage } from "firebase/messaging";
-import NotificationToast from "./NotificationToast.jsx";
+// import NotificationToast from "./NotificationToast.jsx";
 
 function Navbar() {
     const { token, name, profilePic, username, id: userId } = useSelector((state) => state.user);
@@ -41,36 +41,28 @@ function Navbar() {
             if (!data || !data.type || !data.sender) return;
 
             toast((t) => (
-                <NotificationToast
-                    data={{
-                        ...data,
-                        sender: {
-                            name: data.sender?.name || "Someone",
-                            username: data.sender?.username || "",
-                            profilePic: data.sender?.profilePic || null,
-                        },
-                    }}
+                <div
+                    className="cursor-pointer"
                     onClick={() => {
                         toast.dismiss(t.id);
 
-                        if (data.type === "like" && data.blogSlug) {
+                        if (data.type === "like") {
                             navigate(`/blog/${data.blogSlug}`);
-                        }
-
-                        if (data.type === "follow" && data.sender?.username) {
+                        } else if (data.type === "follow") {
                             navigate(`/@${data.sender.username}`);
-                        }
-
-                        if (data.type === "comment") {
+                        } else if (data.type === "comment") {
                             navigate("/notifications");
                         }
                     }}
-                />
-            ), {
-                position: "top-center",
-                duration: 5000,
-            });
+                >
+                    <strong>{data.sender.name || "Someone"}</strong>{" "}
+                    {data.type === "like" && "liked your blog"}
+                    {data.type === "follow" && "started following you"}
+                    {data.type === "comment" && "commented on your blog"}
+                </div>
+            ));
         };
+
 
         socket.on("notification", handler);
         return () => socket.off("notification", handler);
