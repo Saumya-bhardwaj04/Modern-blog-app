@@ -34,12 +34,14 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
       for (const client of clientsArr) {
-        if (client.url.includes(self.location.origin)) {
+        if (client.url.startsWith(self.location.origin)) {
+          client.focus();
           client.navigate(urlToOpen);
-          return client.focus();
+          return;
         }
       }
       return clients.openWindow(urlToOpen);
     })
   );
 });
+
