@@ -53,7 +53,7 @@ async function addComment(req, res) {
                 blog: blog._id,
             });
 
-            const sender = await User.findById(userId).select("name username");
+            const sender = await User.findById(userId).select("name username profilePic");
             const creator = await User.findById(blog.creator).select("fcmTokens");
 
             io.to(blog.creator.toString()).emit("notification", {
@@ -70,7 +70,7 @@ async function addComment(req, res) {
                     creator.fcmTokens,
                     "New comment 💬",
                     `${sender.name} commented on your blog`,
-                    { type: "comment", blogSlug: blog.blogId, }
+                    { type: "comment", blogSlug: blog.blogId,url : `/blog/${blog.blogId}`, image: sender.profilePic || "", }
                 );
             }
         }
@@ -210,7 +210,7 @@ async function likeComment(req, res) {
                 blog: blog._id,
             });
 
-            const sender = await User.findById(userId).select("name username");
+            const sender = await User.findById(userId).select("name username profilePic");
             const creator = await User.findById(blog.creator).select("fcmTokens");
 
             io.to(blog.creator.toString()).emit("notification", {
@@ -224,7 +224,7 @@ async function likeComment(req, res) {
                     creator.fcmTokens,
                     "New like ❤️",
                     `${sender.name} liked a comment on your blog`,
-                    { type: "like", blogSlug: blog.blogId, }
+                    { type: "like", blogSlug: blog.blogId, url : `/blog/${blog.blogId}` , image: sender.profilePic || "",}
                 );
             }
         }

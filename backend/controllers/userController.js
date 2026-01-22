@@ -570,7 +570,7 @@ async function followUser(req, res) {
                 type: "follow",
             });
 
-            const sender = await User.findById(followerId).select("name username");
+            const sender = await User.findById(followerId).select("name username profilePic");
 
             io.to(id.toString()).emit("notification", {
                 type: "follow",
@@ -582,7 +582,7 @@ async function followUser(req, res) {
                     user.fcmTokens,
                     "New follower 👤",
                     `${sender.name} started following you`,
-                    { type: "follow", username: sender.username }
+                    { type: "follow", username: sender.username, url : `/@${sender.username}`, image: sender.profilePic || "", }
                 );
             }
         }
