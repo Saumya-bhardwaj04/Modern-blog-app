@@ -7,13 +7,21 @@ async function sendPush(tokens, title, body, data = {}) {
     const safeData = Object.fromEntries(
       Object.entries(data).map(([k, v]) => [k, String(v)])
     );
+
     await admin.messaging().sendEachForMulticast({
       tokens,
-      data: {
+
+      notification: {
         title,
         body,
+        icon: "https://meloque.me/logo.png", 
+        image: data.image || undefined,     
+      },
+
+      data: {
         ...safeData,
-      }
+        click_action: "FLUTTER_NOTIFICATION_CLICK", 
+      },
     });
   } catch (err) {
     console.error("Push error:", err.message);
