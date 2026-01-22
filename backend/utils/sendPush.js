@@ -10,19 +10,10 @@ async function sendPush(tokens, title, body, data = {}) {
 
     await admin.messaging().sendEachForMulticast({
       tokens,
-
-      notification: {
-        title,
-        body,
-        icon: "https://meloque.me/logo.png", 
-        image: data.image || undefined,     
-      },
-
-      data: {
-        ...safeData,
-        click_action: "FLUTTER_NOTIFICATION_CLICK", 
-      },
+      notification: { title, body },
+      data: safeData,
     });
+    
   } catch (err) {
     console.error("Push error:", err.message);
   }

@@ -70,7 +70,7 @@ async function addComment(req, res) {
                     creator.fcmTokens,
                     "New comment 💬",
                     `${sender.name} commented on your blog`,
-                    { type: "comment", blogSlug: blog.blogId,url : `/blog/${blog.blogId}`, image: sender.profilePic || "", }
+                    { type: "comment", blogSlug: blog.blogId}
                 );
             }
         }
@@ -224,7 +224,7 @@ async function likeComment(req, res) {
                     creator.fcmTokens,
                     "New like ❤️",
                     `${sender.name} liked a comment on your blog`,
-                    { type: "like", blogSlug: blog.blogId, url : `/blog/${blog.blogId}` , image: sender.profilePic || "",}
+                    { type: "like", blogSlug: blog.blogId,}
                 );
             }
         }
