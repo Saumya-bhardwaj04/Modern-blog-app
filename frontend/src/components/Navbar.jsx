@@ -7,7 +7,8 @@ import toast from "react-hot-toast";
 import { signOut } from "firebase/auth";
 import { auth } from "../utils/firebase.js";
 import socket from "../utils/socket";
-import { getMessaging, onMessage } from "firebase/messaging";
+import { messaging, onMessage } from "../utils/firebase.js";
+// import NotificationToast from "./NotificationToast.jsx";
 
 function Navbar() {
     const { token, name, profilePic, username, id: userId } = useSelector((state) => state.user);
@@ -68,8 +69,7 @@ function Navbar() {
     // fcm forground
     useEffect(() => {
         if (!token) return;
-        const messaging = getMessaging();
-
+        
         const unsubscribe = onMessage(messaging, (payload) => {
             if (!token) return;
             const { type, blogSlug, username } = payload.data || {};

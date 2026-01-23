@@ -7,7 +7,7 @@ import { login } from "../utils/userSlice";
 import Input from "../components/Input";
 import googleIcon from "../assets/google-icon-logo-svgrepo-com.svg";
 import { googleAuth, handleRedirectResult } from "../utils/firebase";
-import { getMessaging, getToken } from "firebase/messaging";
+import { messaging, getToken } from "../utils/firebase";
 
 function AuthForm({ type }) {
     const [userData, setUserData] = useState({
@@ -93,29 +93,106 @@ function AuthForm({ type }) {
             setGoogleLoading(false);
         }
     }
+    // async function registerFcmToken(authToken) {
+    //     try {
+    //         if (!("Notification" in window)) return;
+    //         const permission = await Notification.requestPermission();
+    //         if (permission !== "granted") return;
+
+    //         const fcmToken = await getToken(messaging, {
+    //             vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+    //         });
+
+    //         if (fcmToken) {
+    //             await axios.post(
+    //                 `${import.meta.env.VITE_BACKEND_URL}/save-fcm-token`,
+    //                 { token: fcmToken },
+    //                 {
+    //                     headers: { Authorization: `Bearer ${authToken}` },
+    //                 }
+    //             );
+    //         }
+    //     } catch (err) {
+    //         console.error("FCM registration failed:", err.message);
+    //     }
+    // }
+
     async function registerFcmToken(authToken) {
+        // Bail early if no auth (user not logged in)
+        if (!authToken) {
+            console.warn('No auth token provided → skipping FCM registration');
+            return;
+        }
+
         try {
-            if (!("Notification" in window)) return;
-            const permission = await Notification.requestPermission();
-            if (permission !== "granted") return;
+            // 1. Check if Notifications API is supported
+            if (!('Notification' in window)) {
+                console.warn('This browser does not support notifications');
+                return;
+            }
 
-            const messaging = getMessaging();
+            // 2. Request permission
+            let permission = Notification.permission;
+            if (permission === 'default') {
+                permission = await Notification.requestPermission();
+            }
 
+            if (permission !== 'granted') {
+                console.warn(`Notification permission denied or dismissed (${permission})`);
+                return;
+            }
+
+            // 3. Refresh FCM token
             const fcmToken = await getToken(messaging, {
                 vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
             });
 
-            if (fcmToken) {
-                await axios.post(
-                    `${import.meta.env.VITE_BACKEND_URL}/save-fcm-token`,
-                    { token: fcmToken },
-                    {
-                        headers: { Authorization: `Bearer ${authToken}` },
-                    }
-                );
+            if (!fcmToken) {
+                console.warn('No registration token available');
+                return;
             }
+
+            //store last sent token in localStorage to avoid duplicate POSTs
+            const lastSentToken = localStorage.getItem('last_fcm_token');
+            if (fcmToken === lastSentToken) {
+                console.log('FCM token unchanged → skipping send');
+                return;
+            }
+
+            // 4. Send to backend
+            await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/save-fcm-token`,
+                { token: fcmToken },
+                {
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            // helps avoid spamming your backend with duplicate tokens
+            localStorage.setItem('last_fcm_token', fcmToken);
+            console.log('FCM token registered successfully');
+
         } catch (err) {
-            console.error("FCM registration failed:", err.message);
+            console.error('FCM registration failed:', err);
+
+            if (err.code) {
+                // Common Firebase error codes
+                switch (err.code) {
+                    case 'messaging/token-unsubscribe-failed':
+                    case 'messaging/registration-token-not-registered':
+                        // Token expired/invalid → will be regenerated next time
+                        localStorage.removeItem('last_fcm_token');
+                        break;
+                    case 'messaging/permission-blocked':
+                        console.warn('User has permanently blocked notifications');
+                        break;
+                    default:
+                    // network, invalid vapidKey, etc.
+                }
+            }
         }
     }
 
