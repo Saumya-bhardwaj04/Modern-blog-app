@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { setIsOpen } from "../utils/commentSlice";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { deleteCommentAndReply, setCommentLikes, setComments, setReplies, setUpdatedComments } from "../utils/selectedBlogSlice";
 import formateDate from "../utils/formateDate"
@@ -15,6 +15,17 @@ function Comment() {
   const [currentEditComment, setCurrentEditComment] = useState(null);
   const { _id: blogId, comments, creator: { _id: creatorId } } = useSelector((state) => state.selectedBlog);
   const { token, id: userId } = useSelector((state) => state.user);
+  useEffect(() => {
+    const handleComment = ({ blogId: id, comment }) => {
+      if (id !== blog._id) return;
+
+      setComments((prev) => [comment, ...prev]);
+    };
+
+    socket.on("blog-comment", handleComment);
+    return () => socket.off("blog-comment", handleComment);
+  }, [blog]);
+
   async function handleComment() {
     try {
       let res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/blogs/comment/${blogId}`,

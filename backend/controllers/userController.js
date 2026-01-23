@@ -570,7 +570,7 @@ async function followUser(req, res) {
                 type: "follow",
             });
 
-            const sender = await User.findById(followerId).select("name username");
+            const sender = await User.findById(followerId).select("name username profilePic");
 
             io.to(id.toString()).emit("notification", {
                 type: "follow",

@@ -55,11 +55,20 @@ async function addComment(req, res) {
                 type: "comment",
                 sender,
                 blogSlug: blog.blogId,
+            })
+            io.to(blog._id.toString()).emit("blog-comment", {
+                blogId: blog._id.toString(),
+                comment: {
+                    _id: comment._id,
+                    content: comment.content,
+                    user: {
+                        name: sender.name,
+                        username: sender.username,
+                        profilePic: sender.profilePic
+                    },
+                    createdAt: comment.createdAt
+                }
             });
-            io.emit("blog:comment", {
-                blogId: blog._id,
-            });
-
             if (creator.fcmTokens?.length) {
                 sendPush(
                     creator.fcmTokens,
@@ -69,7 +78,7 @@ async function addComment(req, res) {
                 );
             }
         }
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "comment added successfully",
             newComment,
@@ -205,13 +214,18 @@ async function likeComment(req, res) {
                 blog: blog._id,
             });
 
-            const sender = await User.findById(userId).select("name username");
+            const sender = await User.findById(userId).select("name username profilePic");
             const creator = await User.findById(blog.creator).select("fcmTokens");
 
             io.to(blog.creator.toString()).emit("notification", {
                 type: "like",
                 sender,
                 blogSlug: blog.blogId,
+            });
+            io.to(blog._id.toString()).emit("blog-like", {
+                blogId: blog._id.toString(),
+                likes: blog.likes.length,
+                userId
             });
 
             if (creator.fcmTokens?.length) {
@@ -236,7 +250,6 @@ async function likeComment(req, res) {
         });
     }
 }
-
 async function addNestedComment(req, res) {
     try {
         const userId = req.user;

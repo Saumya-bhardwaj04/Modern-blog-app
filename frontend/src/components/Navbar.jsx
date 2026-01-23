@@ -40,7 +40,6 @@ function Navbar() {
             if (!data?.sender?.name) return;
             toast((t) => (
                 <div
-                    className="cursor-pointer"
                     onClick={() => {
                         toast.dismiss(t.id);
 

@@ -8,7 +8,6 @@ const { getIO } = require("../socket");
 const Notification = require("../models/notificationSchema");
 const sendPush = require("../utils/sendPush");
 
-
 async function createBlog(req, res) {
     try {
         const creator = req.user
@@ -265,7 +264,7 @@ async function likeBlog(req, res) {
         const alreadyLiked = blog.likes.includes(userId);
 
         if (!alreadyLiked) {
-            await Blog.findByIdAndUpdate(id, { $push: { likes: userId} });
+            await Blog.findByIdAndUpdate(id, { $push: { likes: userId } });
             await User.findByIdAndUpdate(userId, { $push: { likeBlogs: id } });
             res.status(200).json({
                 success: true,
@@ -300,6 +299,11 @@ async function likeBlog(req, res) {
                 type: "like",
                 sender,
                 blogSlug: blog.blogId,
+            });
+            io.to(blog._id.toString()).emit("blog-like", {
+                blogId: blog._id.toString(),
+                likes: blog.likes.length,
+                userId
             });
 
             if (creator.fcmTokens?.length) {

@@ -44,7 +44,6 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close(); // always close it
 
   const url = event.notification.data?.url || '/notifications';
-
   event.waitUntil(
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })

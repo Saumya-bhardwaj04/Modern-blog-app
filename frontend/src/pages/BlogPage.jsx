@@ -49,6 +49,22 @@ function BlogPage() {
     const [blogData, setBlogData] = useState(null)
     const readTime = calculateReadTime(blogData?.content);
     const [isLike, setIsLike] = useState(false)
+    useEffect(() => {
+        if (!blogId) return;
+        socket.emit("join", blogId);
+        return () => {
+            socket.emit("leave", blogId);
+        };
+    }, [blogId]);
+    useEffect(() => {
+        const handleLike = ({ blogId: id, likes }) => {
+            if (id !== blog._id) return;
+            setLikes(likes);
+        };
+        socket.on("blog-like", handleLike);
+        return () => socket.off("blog-like", handleLike);
+    }, [blog]);
+
     async function fetchBlogById() {
         try {
             let { data: { blog } } = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/blogs/${id}`);

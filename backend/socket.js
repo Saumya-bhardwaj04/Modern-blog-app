@@ -13,6 +13,7 @@ function initSocket(server) {
       origin: [
         allowedOrigins
       ],
+      methods: ["GET", "POST"],
       credentials: true,
     },
     transports: ["websocket"],
