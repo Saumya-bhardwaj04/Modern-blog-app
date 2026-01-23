@@ -39,50 +39,6 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(title, options);
 });
 
-self.addEventListener('push', (event) => {
-  console.log('[sw] Raw push event received:', event);
-
-  // Parse the payload (FCM puts it in event.data)
-  let payload;
-  try {
-    payload = event.data?.json() || {};
-  } catch (e) {
-    console.error('[sw] Failed to parse push payload:', e);
-    // Still need to show something or Chrome will complain
-    return event.waitUntil(
-      self.registration.showNotification('Notification', {
-        body: 'New update received',
-      })
-    );
-  }
-
-  const data = payload.data || {};
-  const notification = payload.notification || {};
-
-  const title = notification.title || data.title || 'New Notification';
-  const options = {
-    body: notification.body || data.body || 'You have a new message',
-    icon: data.icon || '/logo.jpg',
-    badge: '/badge.png',
-    tag: data.tag || `push-${data.type || 'general'}-${data.postId || Date.now()}`,
-    renotify: true,
-    data: {
-      url: data.click_action || data.url || '/notifications',
-    },
-  };
-
-  // This is the key: wrap in event.waitUntil and return the promise
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-      .then(() => {
-        console.log('[sw] Notification shown successfully');
-      })
-      .catch((err) => {
-        console.error('[sw] Show notification failed:', err);
-      })
-  );
-});
-
 // Handle click on notification → open app / specific page
 self.addEventListener('notificationclick', (event) => {
   event.notification.close(); // always close it
