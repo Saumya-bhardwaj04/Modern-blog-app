@@ -21,13 +21,6 @@ async function sendPush(tokens, title, body, data = {}) {
     tokens,                    // array, max 500
     data: safeData,
     webpush: {
-      notification: {
-        title,               // optional – FCM can use this if no SW handler, but we rely on SW
-        body,
-        icon: "/badge.png",   // your app icon (place in public/)
-        badge: "/badge.png",     // optional small badge
-        // vibrate: [200, 100, 200],
-      },
       fcm_options: {
         // Deep link when user clicks the notification
         link: data.click_action || data.url || "/notifications", 
