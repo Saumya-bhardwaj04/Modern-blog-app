@@ -11,30 +11,29 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
+  const title = payload?.data?.title || "New notification";
+  const body = payload?.data?.body || "";
 
-  self.registration.showNotification(
-    payload.data.title,
-    {
-      body: payload.data.body,
-      icon: "/logo192.png",
-      data: {
-        force: "/notifications",
-        type: payload.data.type,
-        blogSlug: payload.data.blogSlug || "",
-        username: payload.data.username || "",
-      }
-    }
-  );
+  self.registration.showNotification(title, {
+    body,
+    icon: "/logo192.png",
+    data: payload.data,
+  });
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const { type, blogSlug, username } = event.notification.data;
+  const data = event.notification.data || {};
   let url = "/notifications";
 
-  if (type === "like") url = `/blog/${blogSlug}`;
-  if (type === "follow") url = `/@${username}`;
+  if (data.type === "like" && data.blogSlug) {
+    url = `/blog/${data.blogSlug}`;
+  }
+
+  if (data.type === "follow" && data.username) {
+    url = `/@${data.username}`;
+  }
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientsArr) => {
       for (const client of clientsArr) {
