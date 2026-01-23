@@ -6,32 +6,31 @@ async function sendPush(tokens, title, body, data = {}) {
     return { successCount: 0, failureCount: 0 };
   }
 
-  // 🔥 Remove undefined / null values and force string
+  // Convert everything to string (FCM data payload requires string values)
   const safeData = Object.fromEntries(
-    Object.entries(data)
-      .filter(([_, v]) => v !== undefined && v !== null)
-      .map(([k, v]) => [k, String(v)])
+    Object.entries({
+      title,
+      body,
+      ...data,
+    }).map(([k, v]) => [k, String(v)])
   );
 
+  // Optional: Add webpush config for better control over web notifications
+  // (icon, badge, link on click, etc.)
   const message = {
-    tokens,
+    tokens,                    // array, max 500
     data: safeData,
     webpush: {
       fcm_options: {
-        link: data.blogSlug
-          ? `/blog/${data.blogSlug}`
-          : data.username
-          ? `/@${data.username}`
-          : "/notifications",
+        // Deep link when user clicks the notification
+        link: data.click_action || data.url || "/notifications", 
       },
       headers: {
+        // Optional: urgency for delivery priority (high for likes/comments)
         Urgency: "high",
       },
     },
   };
-
-  // 🔍 TEMP DEBUG (remove later)
-  console.log("🔥 FCM FINAL PAYLOAD:", JSON.stringify(message, null, 2));
 
   try {
     const batchResponse = await admin.messaging().sendEachForMulticast(message);
@@ -40,13 +39,36 @@ async function sendPush(tokens, title, body, data = {}) {
       `Push sent → Success: ${batchResponse.successCount}, Failures: ${batchResponse.failureCount}`
     );
 
+    // Important: Clean up invalid/expired tokens
+    const failedTokens = [];
+    batchResponse.responses.forEach((resp, idx) => {
+      if (!resp.success) {
+        const error = resp.error;
+        const token = tokens[idx];
+
+        console.warn(`Token failed: ${token} → ${error?.code} - ${error?.message}`);
+
+        if (
+          error?.code === "messaging/registration-token-not-registered" ||
+          error?.code === "messaging/invalid-registration-token" ||
+          error?.code === "messaging/registration-token-unsupported"
+        ) {
+          failedTokens.push(token);
+        }
+      }
+    });
+
+    // Return useful info (you can await removeInvalidTokens(failedTokens) in caller)
     return {
       successCount: batchResponse.successCount,
       failureCount: batchResponse.failureCount,
+      failedTokens,
     };
+    
   } catch (err) {
-    console.error("Push multicast failed:", err);
-    return { successCount: 0, failureCount: tokens.length };
+    console.error("Push multicast failed completely:", err.message || err);
+    // Could throw or return { error: err } depending on your needs
+    return { successCount: 0, failureCount: tokens.length, error: err.message };
   }
 }
 

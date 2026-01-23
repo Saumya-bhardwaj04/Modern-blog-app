@@ -31,27 +31,6 @@ messaging.onBackgroundMessage((payload) => {
 
   self.registration.showNotification(title, options);
 });
-self.addEventListener('push', (event) => {
-  // If Firebase handled it, do nothing
-  if (event.data) {
-    try {
-      const payload = event.data.json();
-      if (payload?.data) {
-        // Firebase will handle via onBackgroundMessage
-        return;
-      }
-    } catch (_) {}
-  }
-
-  // Fallback notification ONLY to stop Chrome warning
-  event.waitUntil(
-    self.registration.showNotification(' ', {
-      body: '',
-      silent: true,
-      tag: 'chrome-fallback',
-    })
-  );
-});
 
 // Handle click on notification → open app / specific page
 self.addEventListener('notificationclick', (event) => {
