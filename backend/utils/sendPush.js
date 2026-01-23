@@ -71,7 +71,7 @@ async function sendPush(tokens, title, body, data = {}) {
       failureCount: batchResponse.failureCount,
       failedTokens,
     };
-
+    
   } catch (err) {
     console.error("Push multicast failed completely:", err.message || err);
     // Could throw or return { error: err } depending on your needs

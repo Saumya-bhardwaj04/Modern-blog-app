@@ -8,7 +8,6 @@ firebase.initializeApp({
   messagingSenderId: "243299068272",
   appId: "1:243299068272:web:06a0bd84f34daa8dcac7b5",
 });
-
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
