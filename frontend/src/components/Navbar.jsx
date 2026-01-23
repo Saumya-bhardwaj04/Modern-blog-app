@@ -33,68 +33,60 @@ function Navbar() {
             socket.disconnect();
         };
     }, [userId, token]);
+    const showNotificationToast = (data, navigate) => {
+        if (!data) return;
+
+        toast((t) => (
+            <div
+                className="cursor-pointer"
+                onClick={() => {
+                    toast.dismiss(t.id);
+
+                    if (data.type === "comment") {
+                        navigate("/notifications");
+                    } else if (data.type === "like") {
+                        navigate(`/blog/${data.blogSlug}`);
+                    } else if (data.type === "follow") {
+                        navigate(`/@${data.username || data.sender?.username}`);
+                    }
+                }}
+            >
+                <strong>
+                    {data.sender?.name || data.title || "New activity"}
+                </strong>{" "}
+                {data.type === "follow" && "started following you"}
+                {data.type === "like" && "liked your blog"}
+                {data.type === "comment" && "commented on your blog"}
+            </div>
+        ));
+    };
+
     // socket notification listener
     useEffect(() => {
-        if (!token) return;
-        const handler = (data) => {
-            if (!data?.sender?.name) return;
-            toast((t) => (
-                <div
-                    onClick={() => {
-                        toast.dismiss(t.id);
+    if (!token) return;
 
-                        if (data.type === "comment") {
-                            navigate("/notifications");
-                        }
-                        else if (data.type === "like") {
-                            navigate(`/blog/${data.blogSlug}`);
-                        }
-                        else if (data.type === "follow") {
-                            navigate(`/@${data.sender.username}`);
-                        }
-                    }}
-                >
-                    <strong>{data.sender.name}</strong>{" "}
-                    {data.type === "follow" && "started following you"}
-                    {data.type === "like" && "liked your blog"}
-                    {data.type === "comment" && "commented on your blog"}
-                </div>
-            ));
-        };
+    const handler = (data) => {
+        if (!data?.sender?.name) return;
+        showNotificationToast(data, navigate);
+    };
 
-        socket.on("notification", handler);
-        return () => socket.off("notification", handler);
-    }, [navigate, token]);
+    socket.on("notification", handler);
+    return () => socket.off("notification", handler);
+}, [navigate, token]);
+
     // fcm forground
     useEffect(() => {
-        if (!token) return;
-        
-        const unsubscribe = onMessage(messaging, (payload) => {
-            if (!token) return;
-            const { type, blogSlug, username } = payload.data || {};
-            toast((t) => (
-                <div
-                    className="cursor-pointer"
-                    onClick={() => {
-                        toast.dismiss(t.id);
-                        if (type === "comment") {
-                            navigate("/notifications");
-                        }
-                        else if (type === "follow") {
-                            navigate(`/@${username}`);
-                        }
-                        else {
-                            navigate(`/blog/${blogSlug}`);
-                        }
-                    }}
-                >
-                    {payload.notification?.title}
-                </div>
-            ));
-        });
+    if (!token) return;
 
-        return () => unsubscribe();
-    }, [navigate, token]);
+    const unsubscribe = onMessage(messaging, (payload) => {
+        if (!payload?.data) return;
+
+        showNotificationToast(payload.data, navigate);
+    });
+
+    return () => unsubscribe();
+}, [navigate, token]);
+
 
     async function handleLogout() {
         await signOut(auth);
@@ -203,10 +195,10 @@ function Navbar() {
                                     <i className="fi fi-rr-user mt-1"></i>Profile</p>
                             </Link>
                             <Link to={"/setting"}>
-                                <p className="popup flex items-center gap-2"> 
+                                <p className="popup flex items-center gap-2">
                                     <i className="fi fi-rr-settings mt-1"></i>Setting</p>
                             </Link>
-                            <hr className="my-1 border-gray-200"/>
+                            <hr className="my-1 border-gray-200" />
                             <p className="popup rounded-b-xl flex items-center gap-2" onClick={handleLogout}>
                                 <i className="fi fi-rr-sign-out-alt mt-1"></i>Logout
                             </p>

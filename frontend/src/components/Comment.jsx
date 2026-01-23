@@ -15,16 +15,16 @@ function Comment() {
   const [currentEditComment, setCurrentEditComment] = useState(null);
   const { _id: blogId, comments, creator: { _id: creatorId } } = useSelector((state) => state.selectedBlog);
   const { token, id: userId } = useSelector((state) => state.user);
-  useEffect(() => {
-    const handleComment = ({ blogId: id, comment }) => {
-      if (id !== blog._id) return;
+  // useEffect(() => {
+  //   const handleComment = ({ blogId: id, comment }) => {
+  //     if (id !== blog._id) return;
 
-      setComments((prev) => [comment, ...prev]);
-    };
+  //     setComments((prev) => [comment, ...prev]);
+  //   };
 
-    socket.on("blog-comment", handleComment);
-    return () => socket.off("blog-comment", handleComment);
-  }, [blog]);
+  //   socket.on("blog-comment", handleComment);
+  //   return () => socket.off("blog-comment", handleComment);
+  // }, [blog]);
 
   async function handleComment() {
     try {

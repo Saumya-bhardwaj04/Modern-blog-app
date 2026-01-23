@@ -11,20 +11,14 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  console.log('[sw] Background message received:', payload);
+  const data = payload.data || {};
 
-  const { notification, data = {} } = payload;
-
-  // Skip if no useful content
-  if (!notification?.title && !data.title) return;
-
-  const title = notification?.title || data.title || 'New Activity';
-  const body  = notification?.body  || data.body  || 'Check whats new';
+  const title = data.title || "New Activity";
 
   const options = {
-    body,
-    icon: data.icon || '/logo.png',          // per-message icon if sent
-    badge: '/badge.png',
+    body: data.body || "You have a new notification",
+    icon: data.icon || "/logo-192.png",
+    badge: data.badge || "/badge-72.png",
     // image: data.image || '/large-preview.jpg', // large preview image (optional)
     tag: data.tag || `notification-${data.type || 'general'}-${data.postId || 'global'}`,
     renotify: true,
