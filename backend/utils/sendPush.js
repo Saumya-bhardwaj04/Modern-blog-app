@@ -21,12 +21,6 @@ async function sendPush(tokens, title, body, data = {}) {
     tokens,                    // array, max 500
     data: safeData,
     webpush: {
-      notification: {
-    title,
-    body,
-    icon: "/badge.png",
-    badge: "/badge.png",
-  },
       fcm_options: {
         // Deep link when user clicks the notification
         link: data.click_action || data.url || "/notifications", 
