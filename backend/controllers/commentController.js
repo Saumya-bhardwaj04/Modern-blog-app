@@ -74,8 +74,15 @@ async function addComment(req, res) {
                     creator.fcmTokens,
                     "New comment 💬",
                     `${sender.name} commented on your blog`,
-                    { type: "comment", blogSlug: blog.blogId }
+                    {
+                        type: "comment",
+                        blogSlug: blog.blogId,
+                        senderName: sender.name,
+                        senderUsername: sender.username,
+                        senderProfilePic: sender.profilePic,
+                    }
                 );
+
             }
         }
         return res.status(200).json({
@@ -232,9 +239,16 @@ async function likeComment(req, res) {
                 sendPush(
                     creator.fcmTokens,
                     "New like ❤️",
-                    `${sender.name} liked a comment on your blog`,
-                    { type: "like", blogSlug: blog.blogId, }
+                    `${sender.name} liked your blog`,
+                    {
+                        type: "like",
+                        blogSlug: blog.blogId,
+                        senderName: sender.name,
+                        senderUsername: sender.username,
+                        senderProfilePic: sender.profilePic,
+                    }
                 );
+
             }
         }
         res.status(200).json({

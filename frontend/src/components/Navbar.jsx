@@ -8,7 +8,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "../utils/firebase.js";
 import socket from "../utils/socket";
 import { messaging, onMessage } from "../utils/firebase.js";
-// import NotificationToast from "./NotificationToast.jsx";
+import NotificationToast from "./NotificationToast.jsx";
 
 function Navbar() {
     const { token, name, profilePic, username, id: userId } = useSelector((state) => state.user);
@@ -33,59 +33,93 @@ function Navbar() {
             socket.disconnect();
         };
     }, [userId, token]);
-    const showNotificationToast = (data, navigate) => {
-        if (!data) return;
+    const showNotificationToast = (rawData, navigate) => {
+        if (!rawData) return;
 
-        toast((t) => (
-            <div
-                className="cursor-pointer"
-                onClick={() => {
-                    toast.dismiss(t.id);
+        // Normalize sender
+        const sender = rawData.sender || {
+            name:
+                rawData.senderName ||
+                rawData.name ||
+                rawData.username ||
+                "Someone",
+            profilePic:
+                rawData.profilePic ||
+                rawData.avatar ||
+                null,
+            username: rawData.username,
+        };
 
-                    if (data.type === "comment") {
-                        navigate("/notifications");
-                    } else if (data.type === "like") {
-                        navigate(`/blog/${data.blogSlug}`);
-                    } else if (data.type === "follow") {
-                        navigate(`/@${data.username || data.sender?.username}`);
-                    }
-                }}
-            >
-                <strong>
-                    {data.sender?.name || data.title || "New activity"}
-                </strong>{" "}
-                {data.type === "follow" && "started following you"}
-                {data.type === "like" && "liked your blog"}
-                {data.type === "comment" && "commented on your blog"}
-            </div>
-        ));
+        const data = {
+            ...rawData,
+            sender,
+        };
+
+        toast.custom(
+            (t) => (
+                <div
+                    className={t.visible ? "toast-enter" : "toast-leave"}
+                    onClick={() => {
+                        toast.dismiss(t.id);
+
+                        if (data.type === "comment") {
+                            navigate("/notifications");
+                        } else if (data.type === "like") {
+                            navigate(`/blog/${data.blogSlug}`);
+                        } else if (data.type === "follow") {
+                            navigate(`/@${sender.username}`);
+                        }
+                    }}
+                >
+                    <NotificationToast t={t} data={data} />
+                </div>
+            ),
+            {
+                position: "top-center",
+                duration: 4000,
+            }
+        );
     };
+
 
     // socket notification listener
     useEffect(() => {
-    if (!token) return;
+        if (!token) return;
 
-    const handler = (data) => {
-        if (!data?.sender?.name) return;
-        showNotificationToast(data, navigate);
-    };
+        const handler = (data) => {
+            if (!data?.sender?.name) return;
+            showNotificationToast(data, navigate);
+        };
 
-    socket.on("notification", handler);
-    return () => socket.off("notification", handler);
-}, [navigate, token]);
+        socket.on("notification", handler);
+        return () => socket.off("notification", handler);
+    }, [navigate, token]);
 
     // fcm forground
     useEffect(() => {
-    if (!token) return;
+        if (!token) return;
+        const unsubscribe = onMessage(messaging, (payload) => {
+            console.log("🔥 FCM PAYLOAD RECEIVED:", payload);
 
-    const unsubscribe = onMessage(messaging, (payload) => {
-        if (!payload?.data) return;
+            const d = payload.data;
 
-        showNotificationToast(payload.data, navigate);
-    });
+            showNotificationToast(
+                {
+                    type: d.type,
+                    blogSlug: d.blogSlug,
+                    sender: {
+                        name: d.senderName,
+                        username: d.senderUsername,
+                        profilePic: d.senderProfilePic,
+                    },
+                },
+                navigate
+            );
+        });
 
-    return () => unsubscribe();
-}, [navigate, token]);
+
+        return () => unsubscribe();
+    }, [navigate, token]);
 
 
     async function handleLogout() {

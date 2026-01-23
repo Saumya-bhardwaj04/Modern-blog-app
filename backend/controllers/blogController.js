@@ -311,8 +311,15 @@ async function likeBlog(req, res) {
                     creator.fcmTokens,
                     "New like ❤️",
                     `${sender.name} liked your blog`,
-                    { type: "like", blogSlug: blog.blogId, }
+                    {
+                        type: "like",
+                        blogSlug: blog.blogId,
+                        senderName: sender.name,
+                        senderUsername: sender.username,
+                        senderProfilePic: sender.profilePic,
+                    }
                 );
+
             }
         }
 

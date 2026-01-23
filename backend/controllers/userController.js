@@ -582,8 +582,14 @@ async function followUser(req, res) {
                     user.fcmTokens,
                     "New follower 👤",
                     `${sender.name} started following you`,
-                    { type: "follow", username: sender.username,}
+                    {
+                        type: "follow",
+                        senderName: sender.name,
+                        senderUsername: sender.username,
+                        senderProfilePic: sender.profilePic,
+                    }
                 );
+
             }
         }
 
