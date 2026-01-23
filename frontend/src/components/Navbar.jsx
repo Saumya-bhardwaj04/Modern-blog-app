@@ -8,7 +8,6 @@ import { signOut } from "firebase/auth";
 import { auth } from "../utils/firebase.js";
 import socket from "../utils/socket";
 import { getMessaging, onMessage } from "firebase/messaging";
-// import NotificationToast from "./NotificationToast.jsx";
 
 function Navbar() {
     const { token, name, profilePic, username, id: userId } = useSelector((state) => state.user);
@@ -36,38 +35,36 @@ function Navbar() {
     // socket notification listener
     useEffect(() => {
         if (!token) return;
-
         const handler = (data) => {
-            if (!data || !data.type || !data.sender) return;
-
+            if (!data?.sender?.name) return;
             toast((t) => (
                 <div
                     className="cursor-pointer"
                     onClick={() => {
                         toast.dismiss(t.id);
 
-                        if (data.type === "like") {
-                            navigate(`/blog/${data.blogSlug}`);
-                        } else if (data.type === "follow") {
-                            navigate(`/@${data.sender.username}`);
-                        } else if (data.type === "comment") {
+                        if (data.type === "comment") {
                             navigate("/notifications");
+                        }
+                        else if (data.type === "like") {
+                            navigate(`/blog/${data.blogSlug}`);
+                        }
+                        else if (data.type === "follow") {
+                            navigate(`/@${data.sender.username}`);
                         }
                     }}
                 >
-                    <strong>{data.sender.name || "Someone"}</strong>{" "}
-                    {data.type === "like" && "liked your blog"}
+                    <strong>{data.sender.name}</strong>{" "}
                     {data.type === "follow" && "started following you"}
+                    {data.type === "like" && "liked your blog"}
                     {data.type === "comment" && "commented on your blog"}
                 </div>
             ));
         };
 
-
         socket.on("notification", handler);
         return () => socket.off("notification", handler);
     }, [navigate, token]);
-
     // fcm forground
     useEffect(() => {
         if (!token) return;
@@ -207,10 +204,10 @@ function Navbar() {
                                     <i className="fi fi-rr-user mt-1"></i>Profile</p>
                             </Link>
                             <Link to={"/setting"}>
-                                <p className="popup flex items-center gap-2">
+                                <p className="popup flex items-center gap-2"> 
                                     <i className="fi fi-rr-settings mt-1"></i>Setting</p>
                             </Link>
-                            <hr className="my-1 border-gray-200" />
+                            <hr className="my-1 border-gray-200"/>
                             <p className="popup rounded-b-xl flex items-center gap-2" onClick={handleLogout}>
                                 <i className="fi fi-rr-sign-out-alt mt-1"></i>Logout
                             </p>
