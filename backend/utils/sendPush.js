@@ -16,10 +16,6 @@ async function sendPush(tokens, title, body, data = {}) {
   const message = {
     tokens,
     data: safeData,
-    notification: {
-      title,
-      body,
-    },
     webpush: {
       fcm_options: {
         link: data.blogSlug
