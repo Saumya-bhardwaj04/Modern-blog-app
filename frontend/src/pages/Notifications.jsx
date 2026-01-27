@@ -46,9 +46,15 @@ function mergeNotifications(list) {
 
     let key = n.type;
 
-    if (n.type === "like" || n.type === "comment") {
-      key = `${n.type}-${n.blog?._id}`;
+    if (
+      n.type === "like" ||
+      n.type === "comment" ||
+      n.type === "comment_like" ||
+      n.type === "comment_reply"
+    ) {
+      key = `${n.type}-${n.comment?._id || n.blog?._id}`;
     }
+
     if (n.type === "follow") {
       key = `follow-${n.sender._id}`;
     }
@@ -131,7 +137,8 @@ function Notifications() {
     const link =
       n.type === "follow"
         ? `/@${n.sender?.username}`
-        : `/blog/${n.blog?.blogId}`;
+        : `/blog/${n.blog?.blogId}#comments`;
+
 
     return (
       <Link key={n._id} to={link} onClick={() => handleClick(n._id)} className="block">
@@ -155,6 +162,8 @@ function Notifications() {
             {n.type === "follow" && "started following you"}
             {n.type === "like" && "liked your blog"}
             {n.type === "comment" && "commented on your blog"}
+            {n.type === "comment_like" && "liked your comment"}
+            {n.type === "comment_reply" && "replied to your comment"}
           </div>
 
           <span className="absolute bottom-2 right-3 text-[11px] text-gray-400">

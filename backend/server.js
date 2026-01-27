@@ -46,10 +46,6 @@ app.get("/", (req, res) => {
   res.send("Backend is running");
 });
 
-app.get("/remove-fcm-token", (req, res) => {
-  res.send("FCM route alive");
-});
-
 app.use("/api/v1", userRoute);
 app.use("/api/v1", blogRoute);
 

@@ -22,6 +22,8 @@ function NotificationToast({ t, data }) {
                     {data.type === "follow" && "started following you"}
                     {data.type === "like" && "liked your blog"}
                     {data.type === "comment" && "commented on your blog"}
+                    {data.type === "comment_like" && "liked your comment"}
+                    {data.type === "comment_reply" && "replied to your comment"}
                 </p>
                 <span className="text-xs text-gray-400 mt-1">
                     just now

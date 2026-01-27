@@ -81,12 +81,17 @@ function Navbar() {
                     onClick={() => {
                         toast.dismiss(t.id);
 
-                        if (data.type === "comment") {
+                        if (
+                            data.type === "comment" ||
+                            data.type === "comment_like" ||
+                            data.type === "comment_reply"
+                        ) {
                             navigate("/notifications");
                         } else if (data.type === "like") {
-                            navigate(`/blog/${data.blogSlug}`);
+                            navigate(`/blog/${data.blogSlug
+                                }`);
                         } else if (data.type === "follow") {
-                            navigate(`/@${sender.username}`);
+                            navigate(`/ @${sender.username}`);
                         }
                     }}
                 >
@@ -150,7 +155,7 @@ function Navbar() {
 
             // remove from backend
             await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/remove-fcm-token`,
+                `${import.meta.env.VITE_BACKEND_URL} / remove - fcm - token`,
                 { token: fcmToken },
                 {
                     headers: {
@@ -212,7 +217,7 @@ function Navbar() {
                             disabled={isStartPage}
                             className={`bg-gray-100 focus:outline-none max-sm:w-[calc(100vw_-_70px)] rounded-full pl-12 p-2 
                              ${isStartPage ? "cursor-not-allowed opacity-50" : ""}
-                             `}
+            `}
                             placeholder="Search"
                             value={searchQuery ? searchQuery : ""}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -220,7 +225,7 @@ function Navbar() {
                                 if (isStartPage) return;
                                 if (e.code == "Enter" || e.code == "NumpadEnter" || e.keyCode == "13") {
                                     if (searchQuery.trim()) {
-                                        navigate(`/search?q=${searchQuery.trim()}`);
+                                        navigate(`/ search ? q = ${searchQuery.trim()}`);
                                         setShowSearchBar(false);
                                         if (showSearchBar) {
                                             setSearchQuery("");
@@ -265,7 +270,7 @@ function Navbar() {
                         token ? (
                             <div className="w-10 h-10 cursor-pointer aspect-square rounded-full overflow-hidden" onClick={() => setShowPopup((prev) => !prev)}>
                                 <img src={profilePic ? profilePic : `https://api.dicebear.com/9.x/initials/svg?seed=${name}`} alt="" className="rounded-full w-full h-full object-cover" />
-                            </div>
+                            </div >
                         ) : (<div className="flex gap-2">
                             <Link to={"/signup"}>
                                 <button className="bg-gray-800 px-6 py-3 text-white rounded-full hover:bg-gray-900 transition shadow-md hover:shadow-lg">Signup</button>
@@ -276,12 +281,12 @@ function Navbar() {
                         </div>)
 
                     }
-                </div>
+                </div >
                 {
                     showPopup ? (
                         <div
                             onMouseLeave={() => setShowPopup(false)}
-                            className="w-[150px] bg-gray-50 border absolute z-40 right-2 drop-shadow-md top-14 rounded-xl">
+                            className="w-[150px] bg-gray-50 border absolute z-40 right-2 drop-shadow-md top-14 rounded-xl" >
                             <Link to={`/@${username}`}>
                                 <p className="popup rounded-t-xl flex items-center gap-2">
                                     <i className="fi fi-rr-user mt-1"></i>Profile</p>
@@ -294,9 +299,9 @@ function Navbar() {
                             <p className="popup rounded-b-xl flex items-center gap-2" onClick={handleLogout}>
                                 <i className="fi fi-rr-sign-out-alt mt-1"></i>Logout
                             </p>
-                        </div>) : null
+                        </div >) : null
                 }
-            </div>
+            </div >
             <Outlet />
         </>
     )

@@ -210,50 +210,45 @@ async function likeComment(req, res) {
 
         if (
             !alreadyLiked &&
-            blog.creator.toString() !== userId.toString()
+            comment.user.toString() !== userId.toString()
         ) {
             const io = getIO();
 
             await Notification.create({
-                recipient: blog.creator,
+                recipient: comment.user,
                 sender: userId,
-                type: "like",
+                type: "comment_like",
                 blog: blog._id,
+                comment: comment._id,
             });
 
             const sender = await User.findById(userId).select("name username profilePic");
-            const creator = await User.findById(blog.creator).select("fcmTokens");
+            const receiver = await User.findById(comment.user).select("fcmTokens");
 
-            io.to(blog.creator.toString()).emit("notification", {
-                type: "like",
+            io.to(comment.user.toString()).emit("notification", {
+                type: "comment_like",
                 sender,
                 blogSlug: blog.blogId,
             });
-            io.to(blog._id.toString()).emit("blog-like", {
-                blogId: blog._id.toString(),
-                likes: blog.likes.length,
-                userId
-            });
 
-            if (creator.fcmTokens?.length) {
+            if (receiver.fcmTokens?.length) {
                 sendPush(
-                    creator.fcmTokens,
-                    "New like ❤️",
-                    `${sender.name} liked your blog`,
+                    receiver.fcmTokens,
+                    "New like 👍",
+                    `${sender.name} liked your comment`,
                     {
-                        type: "like",
+                        type: "comment_like",
                         blogSlug: blog.blogId,
                         senderName: sender.name,
                         senderUsername: sender.username,
                         senderProfilePic: sender.profilePic,
                     }
                 );
-
             }
         }
         res.status(200).json({
             success: true,
-            message: alreadyLiked ? "Unliked successfully" : "Liked successfully",
+            message: alreadyLiked ? "Comment unliked successfully" : "Comment liked successfully",
             isLiked: !alreadyLiked,
         });
     } catch (err) {
@@ -300,6 +295,43 @@ async function addNestedComment(req, res) {
         await Comment.findByIdAndUpdate(parentCommentId, {
             $push: { replies: newReply._id }
         });
+        // 🔔 notify parent comment owner (if not self)
+        if (comment.user.toString() !== userId.toString()) {
+            const io = getIO();
+
+            await Notification.create({
+                recipient: comment.user,
+                sender: userId,
+                type: "comment_reply",
+                blog: blog._id,
+                comment: comment._id,
+            });
+
+            const sender = await User.findById(userId).select("name username profilePic");
+            const receiver = await User.findById(comment.user).select("fcmTokens");
+
+            io.to(comment.user.toString()).emit("notification", {
+                type: "comment_reply",
+                sender,
+                blogSlug: blog.blogId,
+            });
+
+            if (receiver.fcmTokens?.length) {
+                sendPush(
+                    receiver.fcmTokens,
+                    "New reply 💬",
+                    `${sender.name} replied to your comment`,
+                    {
+                        type: "comment_reply",
+                        blogSlug: blog.blogId,
+                        senderName: sender.name,
+                        senderUsername: sender.username,
+                        senderProfilePic: sender.profilePic,
+                    }
+                );
+            }
+        }
+
         return res.status(200).json({
             success: true,
             message: "Reply added successfully",
