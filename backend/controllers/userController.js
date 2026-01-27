@@ -638,5 +638,17 @@ async function saveFcmToken(req, res) {
 
     res.sendStatus(200);
 }
+async function removeFcmToken(req, res) {
+    const userId = req.user;
+    const { token } = req.body;
 
-module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken };
+    if (!token) return res.sendStatus(400);
+
+    await User.findByIdAndUpdate(userId, {
+        $pull: { fcmTokens: token },
+    });
+
+    res.sendStatus(200);
+}
+
+module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken,removeFcmToken };

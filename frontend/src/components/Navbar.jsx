@@ -100,7 +100,6 @@ function Navbar() {
         );
     };
 
-
     // socket notification listener
     useEffect(() => {
         if (!token) return;
@@ -144,6 +143,30 @@ function Navbar() {
         return () => unsubscribe();
     }, [navigate, token]);
 
+    async function unregisterFcmToken(authToken) {
+        try {
+            const fcmToken = localStorage.getItem("last_fcm_token");
+            if (!fcmToken || !authToken) return;
+
+            // remove from backend
+            await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/remove-fcm-token`,
+                { token: fcmToken },
+                {
+                    headers: {
+                        Authorization: `Bearer ${authToken}`,
+                    },
+                }
+            );
+
+            // remove locally
+            localStorage.removeItem("last_fcm_token");
+            console.log("FCM token removed successfully");
+        } catch (err) {
+            console.error("Failed to remove FCM token", err);
+        }
+    }
+
     useEffect(() => {
         if (location.pathname === "/notifications") {
             fetchUnreadCount();
@@ -151,6 +174,7 @@ function Navbar() {
     }, [location.pathname]);
 
     async function handleLogout() {
+        await unregisterFcmToken(token);
         await signOut(auth);
         socket.disconnect();
         dispatch(logout())
@@ -213,9 +237,9 @@ function Navbar() {
                     </div>
                 </div>
 
-                <div className="flex gap-5 justify-center items-center">
+                <div className="flex gap-5 justify-center items-center ">
                     {token && (
-                        <div className="relative">
+                        <div className="relative mt-1">
                             <i
                                 className="fi fi-rr-bell cursor-pointer text-2xl mt-1"
                                 onClick={() => navigate("/notifications")}
