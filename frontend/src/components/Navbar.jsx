@@ -21,6 +21,22 @@ function Navbar() {
     const [showSearchBar, setShowSearchBar] = useState(false);
     const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup";
     const [hasUnread, setHasUnread] = useState(false);
+    const fetchUnreadCount = async () => {
+        if (!token) return;
+        try {
+            const res = await axios.get(
+                `${import.meta.env.VITE_BACKEND_URL}/notifications/unread-count`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            setHasUnread(res.data.count > 0);
+        } catch (err) {
+            console.error("Unread count error", err);
+        }
+    };
+
+    useEffect(() => {
+        fetchUnreadCount();
+    }, [token]);
 
     //socket connection
     useEffect(() => {
@@ -91,7 +107,8 @@ function Navbar() {
 
         const handler = (data) => {
             if (!data?.sender?.name) return;
-            setHasUnread(true); // 🔵 mark unread
+            fetchUnreadCount(); // 🔥 sync badge
+            // setHasUnread(true); // 🔵
             showNotificationToast(data, navigate);
         };
 
@@ -119,24 +136,19 @@ function Navbar() {
                 },
                 navigate
             );
+            fetchUnreadCount(); // 🔥 sync badge
+
         });
-        setHasUnread(true); // 🔵
+        // setHasUnread(true); // 🔵
 
         return () => unsubscribe();
     }, [navigate, token]);
 
     useEffect(() => {
-        if (!token) return;
-
         if (location.pathname === "/notifications") {
-            axios.get(
-                `${import.meta.env.VITE_BACKEND_URL}/notifications/unread-count`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            ).then(res => {
-                setHasUnread(res.data.count > 0);
-            });
+            fetchUnreadCount();
         }
-    }, [location.pathname, token]);
+    }, [location.pathname]);
 
     async function handleLogout() {
         await signOut(auth);
