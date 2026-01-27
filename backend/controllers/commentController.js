@@ -4,12 +4,15 @@ const { getIO } = require("../socket");
 const Notification = require("../models/notificationSchema");
 const sendPush = require("../utils/sendPush");
 const User = require("../models/userSchema");
+const parseMentions = require("../utils/parseMentions");
 
 async function addComment(req, res) {
     try {
         const userId = req.user;
         const { id } = req.params;
         const { comment } = req.body;
+        const mentionedUsernames = parseMentions(comment);
+
         if (!comment) {
             return res.status(400).json({
                 success: false,
@@ -85,6 +88,48 @@ async function addComment(req, res) {
 
             }
         }
+        if (mentionedUsernames.length) {
+            const mentionedUsers = await User.find({
+                username: { $in: mentionedUsernames },
+            }).select("_id fcmTokens username");
+
+            const sender = await User.findById(userId).select("name username profilePic");
+            const io = getIO();
+
+            for (const user of mentionedUsers) {
+                if (user._id.toString() === userId.toString()) continue;
+
+                await Notification.create({
+                    recipient: user._id,
+                    sender: userId,
+                    type: "mention",
+                    blog: blog._id,
+                    comment: newComment._id,
+                });
+
+                io.to(user._id.toString()).emit("notification", {
+                    type: "mention",
+                    sender,
+                    blogSlug: blog.blogId,
+                });
+
+                if (user.fcmTokens?.length) {
+                    sendPush(
+                        user.fcmTokens,
+                        "You were mentioned 👋",
+                        `${sender.name} mentioned you in a comment`,
+                        {
+                            type: "mention",
+                            blogSlug: blog.blogId,
+                            senderName: sender.name,
+                            senderUsername: sender.username,
+                            senderProfilePic: sender.profilePic,
+                        }
+                    );
+                }
+            }
+        }
+
         return res.status(200).json({
             success: true,
             message: "comment added successfully",
@@ -264,6 +309,7 @@ async function addNestedComment(req, res) {
         const userId = req.user;
         const { id: blogId, parentCommentId } = req.params;
         const { reply } = req.body;
+        const mentionedUsernames = parseMentions(reply);
 
         const comment = await Comment.findById(parentCommentId);
         const blog = await Blog.findById(blogId);
@@ -331,6 +377,49 @@ async function addNestedComment(req, res) {
                 );
             }
         }
+        
+        if (mentionedUsernames.length) {
+            const mentionedUsers = await User.find({
+                username: { $in: mentionedUsernames },
+            }).select("_id fcmTokens username");
+
+            const sender = await User.findById(userId).select("name username profilePic");
+            const io = getIO();
+
+            for (const user of mentionedUsers) {
+                if (user._id.toString() === userId.toString()) continue;
+
+                await Notification.create({
+                    recipient: user._id,
+                    sender: userId,
+                    type: "mention",
+                    blog: blog._id,
+                    comment: newReply._id,
+                });
+
+                io.to(user._id.toString()).emit("notification", {
+                    type: "mention",
+                    sender,
+                    blogSlug: blog.blogId,
+                });
+
+                if (user.fcmTokens?.length) {
+                    sendPush(
+                        user.fcmTokens,
+                        "You were mentioned 👋",
+                        `${sender.name} mentioned you in a comment`,
+                        {
+                            type: "mention",
+                            blogSlug: blog.blogId,
+                            senderName: sender.name,
+                            senderUsername: sender.username,
+                            senderProfilePic: sender.profilePic,
+                        }
+                    );
+                }
+            }
+        }
+
 
         return res.status(200).json({
             success: true,

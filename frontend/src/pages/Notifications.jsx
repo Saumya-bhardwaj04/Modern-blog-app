@@ -36,7 +36,6 @@ function isThisMonth(date) {
   );
 }
 
-
 /* merge same notification */
 function mergeNotifications(list) {
   const map = new Map();
@@ -164,6 +163,7 @@ function Notifications() {
             {n.type === "comment" && "commented on your blog"}
             {n.type === "comment_like" && "liked your comment"}
             {n.type === "comment_reply" && "replied to your comment"}
+            {n.type === "mention" && "mentioned you in a comment"}
           </div>
 
           <span className="absolute bottom-2 right-3 text-[11px] text-gray-400">
