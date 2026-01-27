@@ -601,7 +601,6 @@ async function followUser(req, res) {
         });
     }
 }
-
 async function changeSavedLikedBlog(req, res) {
     try {
         const userId = req.user;
@@ -650,5 +649,17 @@ async function removeFcmToken(req, res) {
 
     res.sendStatus(200);
 }
+async function searchUsers(req, res) {
+  const q = req.query.q;
+  if (!q) return res.json([]);
 
-module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken,removeFcmToken };
+  const users = await User.find({
+    username: { $regex: q, $options: "i" },
+  })
+    .select("name username profilePic")
+    .limit(5);
+
+  res.json(users);
+}
+
+module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken,removeFcmToken,searchUsers};

@@ -19,6 +19,7 @@ route.post("/Blogs/comment/:id", verifyUser, addComment)
 route.delete("/Blogs/comment/:id", verifyUser, deleteComment)
 route.patch("/Blogs/edit-comment/:id", verifyUser, editComment)
 route.patch("/Blogs/like-comment/:id", verifyUser, likeComment)
+
 // nested comments
 route.post("/comment/:parentCommentId/:id", verifyUser, addNestedComment)
 

@@ -6,6 +6,12 @@ import { deleteCommentAndReply, setCommentLikes, setComments, setReplies, setUpd
 import formateDate from "../utils/formateDate"
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
+import { formatMentions } from "./formatMentions.jsx";
+
+// prevents duplicate mentions
+function extractMentions(text) {
+  return [...new Set(text.match(/@(\w+)/g)?.map(m => m.slice(1)) || [])];
+}
 
 function Comment() {
   const dispatch = useDispatch()
@@ -72,8 +78,37 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
   const [reply, setReply] = useState("");
   const [updateComment, setUpdateComment] = useState("");
   const dispatch = useDispatch();
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionUsers, setMentionUsers] = useState([]);
+  const [showMentionBox, setShowMentionBox] = useState(false);
+  /* ---------- mention detection ---------- */
+  useEffect(() => {
+    const match = reply.match(/@(\w*)$/);
+    if (!match) {
+      setShowMentionBox(false);
+      return;
+    }
+    setMentionQuery(match[1]);
+  }, [reply]);
+
+  /* ---------- fetch users ---------- */
+  useEffect(() => {
+    if (!mentionQuery) return;
+
+    axios
+      .get(
+        `${import.meta.env.VITE_BACKEND_URL}/users/search?q=${mentionQuery}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      .then((res) => {
+        setMentionUsers(res.data || []);
+        setShowMentionBox(true);
+      });
+  }, [mentionQuery, token]);
+
   async function handleReply(parentCommentId) {
     try {
+      const uniqueMentions = extractMentions(reply);
       let res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/comment/${parentCommentId}/${blogId}`,
         {
           reply,
@@ -90,7 +125,6 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
       toast.success(res.data.message);
     } catch (error) {
       console.log(error.response.data.message);
-
     }
   }
   async function handleCommentLike(commentId) {
@@ -130,8 +164,8 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
     } catch (error) {
       toast.error(error.response.data.message);
     } finally {
-      setUpdateComment("");
       setCurrentEditComment(null);
+      setUpdateComment("");
     }
   }
   async function handleCommentDelete(id) {
@@ -264,7 +298,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                   </div>
                 </div>
               ) : (
-                <p className="font-medium text-lg">{comment.comment}</p>
+                <p className="font-medium text-lg">{formatMentions(comment.comment)}</p>
               )}
 
               <div className="flex justify-between">
@@ -304,19 +338,47 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                 <div className="my-4">
                   <textarea
                     type="text"
+                    value={reply}
                     placeholder="Reply..."
                     className="h-[150px] resize-none drop-shadow w-full p-3 text-lg focus:outline-none"
                     onChange={(e) => setReply(e.target.value)}
                   />
+                  {/* mention dropdown */}
+                  {showMentionBox && mentionUsers.length > 0 && (
+                    <div className="absolute bg-white border rounded-md shadow-md w-full z-50">
+                      {mentionUsers.map((u) => (
+                        <div
+                          key={u._id}
+                          className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setReply((prev) =>
+                              prev.replace(/@(\w*)$/, `@${u.username} `)
+                            );
+                            setShowMentionBox(false);
+                          }}
+                        >
+                          <img
+                            src={u.profilePic ||
+                              `https://api.dicebear.com/9.x/initials/svg?seed=${u.username}`}
+                            className="w-8 h-8 rounded-full"
+                          />
+                          <div>
+                            <p className="font-medium">{u.username}</p>
+                            <p className="text-xs text-gray-500">{u.name}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <button
                     onClick={() => handleReply(comment._id)}
                     className="bg-green-500 px-7 py-3 my-2 rounded-md"
                   >
-                    Add
+                    Add Reply
                   </button>
                 </div>
               )}
-
+              
               {comment.replies.length > 0 && (
                 <div className="pl-6 border-l">
                   <DisplayComments
