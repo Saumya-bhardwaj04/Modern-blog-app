@@ -9,6 +9,7 @@ import { auth } from "../utils/firebase.js";
 import socket from "../utils/socket";
 import { messaging, onMessage } from "../utils/firebase.js";
 import NotificationToast from "./NotificationToast.jsx";
+import axios from "axios";
 
 function Navbar() {
     const { token, name, profilePic, username, id: userId } = useSelector((state) => state.user);
@@ -19,6 +20,8 @@ function Navbar() {
     const [searchQuery, setSearchQuery] = useState(null);
     const [showSearchBar, setShowSearchBar] = useState(false);
     const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup";
+    const [hasUnread, setHasUnread] = useState(false);
+
     //socket connection
     useEffect(() => {
         if (!userId || !token) {
@@ -88,6 +91,7 @@ function Navbar() {
 
         const handler = (data) => {
             if (!data?.sender?.name) return;
+            setHasUnread(true); // 🔵 mark unread
             showNotificationToast(data, navigate);
         };
 
@@ -116,11 +120,23 @@ function Navbar() {
                 navigate
             );
         });
-
+        setHasUnread(true); // 🔵
 
         return () => unsubscribe();
     }, [navigate, token]);
 
+    useEffect(() => {
+        if (!token) return;
+
+        if (location.pathname === "/notifications") {
+            axios.get(
+                `${import.meta.env.VITE_BACKEND_URL}/notifications/unread-count`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            ).then(res => {
+                setHasUnread(res.data.count > 0);
+            });
+        }
+    }, [location.pathname, token]);
 
     async function handleLogout() {
         await signOut(auth);
@@ -187,11 +203,17 @@ function Navbar() {
 
                 <div className="flex gap-5 justify-center items-center">
                     {token && (
-                        <i
-                            className="fi fi-rr-bell cursor-pointer text-2xl mt-1"
-                            onClick={() => navigate("/notifications")}
-                        />
+                        <div className="relative">
+                            <i
+                                className="fi fi-rr-bell cursor-pointer text-2xl mt-1"
+                                onClick={() => navigate("/notifications")}
+                            />
+                            {hasUnread && (
+                                <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-blue-600 rounded-full" />
+                            )}
+                        </div>
                     )}
+
                     <i
                         className="fi fi-rr-search text-2xl mt-1 sm:hidden cursor-pointer"
                         onClick={() => setShowSearchBar((prev) => !prev)}

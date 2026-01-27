@@ -44,9 +44,15 @@ function BlogPage() {
     const navigate = useNavigate();
     const [isBlogSaved, setIsBlogSaved] = useState(false);
     const { token, email, id: userId, profilePic, following } = useSelector((state) => state.user);
-    const { likes, comments, content, creator } = useSelector((state) => state.selectedBlog);
+    const {
+        likes = [],
+        comments = [],
+        content = { blocks: [] },
+        creator = null,
+    } = useSelector((state) => state.selectedBlog || {});
     const { isOpen } = useSelector((state) => state.comment);
     const [blogData, setBlogData] = useState(null)
+    const [loading, setLoading] = useState(true);
     const readTime = calculateReadTime(blogData?.content);
     const [isLike, setIsLike] = useState(false)
     // useEffect(() => {
@@ -67,6 +73,7 @@ function BlogPage() {
 
     async function fetchBlogById() {
         try {
+            setLoading(true);
             let { data: { blog } } = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/blogs/${id}`);
             setBlogData(blog);
             setIsBlogSaved(blog?.totalSaves?.includes(userId));
@@ -76,8 +83,22 @@ function BlogPage() {
             }
         }
         catch (error) {
-            toast.error(error.response?.data?.message || "Failed to fetch blog");
+            if (error.response?.status === 404) {
+                // blog deleted
+                setBlogData(null);
+                dispatch(removeSelectedBlog());
+            } else {
+                toast.error(
+                    creator?.name
+                        ? `${creator.name}! deleted this blog`
+                        : "This blog has been deleted"
+                );
+
+            }
+        } finally {
+            setLoading(false);
         }
+
     }
     async function handleLike() {
         if (!token) {
@@ -134,7 +155,29 @@ function BlogPage() {
                 dispatch(removeSelectedBlog());
             }
         };
-    }, [id]);
+    }, [id])
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center w-full h-[calc(100vh-500px)]">
+                <span className="loader"></span>
+            </div>
+        );
+    }
+    if (!blogData) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh]">
+                <h2 className="text-2xl font-semibold">
+                    This blog has been deleted
+                </h2>
+                <button
+                    onClick={() => navigate("/home", { replace: true })}
+                    className="mt-4 px-6 py-2 bg-black text-white rounded"
+                >
+                    Go Home
+                </button>
+            </div>
+        );
+    }
     return (
         <div className="max-w-[700px] mx-auto p-5">
             {

@@ -48,6 +48,14 @@ function EditProfile() {
   }
 
   async function handleUpdateProfile() {
+    if (!userData.name?.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+    if (!userData.username?.trim()) {
+      toast.error("username is required");
+      return;
+    }
     startLoading();
     setIsButtonDisabled(true);
     const formData = new FormData();
@@ -83,11 +91,15 @@ function EditProfile() {
   }
 
   useEffect(() => {
-    if (initialData) {
-      const isEqual = JSON.stringify(userData) === JSON.stringify(initialData);
-      setIsButtonDisabled(isEqual);
-    }
+    const isEmpty =
+      !userData.name?.trim() || !userData.username?.trim();
+
+    const isUnchanged =
+      JSON.stringify(userData) === JSON.stringify(initialData);
+
+    setIsButtonDisabled(isEmpty || isUnchanged);
   }, [userData, initialData]);
+
   return token == null ? (
     <Navigate to={"/"} />
   ) : (
@@ -187,7 +199,7 @@ function EditProfile() {
               <button
                 className={` mx-4 px-7 py-3 rounded-full text-white my-3 bg-black`}
                 onClick={() => {
-                  if (usernameChanged) {
+                  if (usernameChanged && userData.username?.trim()) {
                     navigate(`/@${userData.username}`, { replace: true });
                   } else {
                     navigate(-1);

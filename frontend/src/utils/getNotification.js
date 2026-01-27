@@ -1,8 +1,9 @@
 import axios from "axios";
 
 export async function fetchNotifications(token, page = 1, limit = 5) {
+  const API = `${import.meta.env.VITE_BACKEND_URL}/api/v1`;
   const res = await axios.get(
-    `${import.meta.env.VITE_BACKEND_URL}/notifications`,
+    `${API}/notifications`,
     {
       params: { page, limit },
       headers: {
@@ -15,8 +16,9 @@ export async function fetchNotifications(token, page = 1, limit = 5) {
 }
 
 export async function markNotificationRead(id, token) {
+  const API = `${import.meta.env.VITE_BACKEND_URL}/api/v1`;
   await axios.patch(
-    `${import.meta.env.VITE_BACKEND_URL}/notifications/${id}/mark-as-read`,
+    `${API}/notifications/${id}/mark-as-read`,
     {},
     {
       headers: {

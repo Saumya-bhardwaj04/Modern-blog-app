@@ -16,15 +16,16 @@ import TextVariantTune from "@editorjs/text-variant-tune";
 import SimpleImage from "@editorjs/simple-image";
 import ImageTool from "@editorjs/image";
 import Table from '@editorjs/table'
+
 import { setIsOpen } from "../utils/commentSlice";
 import { removeSelectedBlog } from "../utils/selectedBlogSlice";
 import useLoader from "../hooks/useLoader";
 
 function AddBlog() {
     const { id } = useParams();
+    const isEdit = Boolean(id);
     const editorjsRef = useRef(null);
     const [isLoading, startLoading, stopLoading] = useLoader();
-    const formData = new FormData();
     const { token } = useSelector(slice => slice.user);
     const { title, description, image, content, draft, tags } = useSelector(slice => slice.selectedBlog);
 
@@ -32,14 +33,33 @@ function AddBlog() {
         title: "",
         description: "",
         image: null,
-        content: "",
+        content: { blocks: [] },
         tags: [],
         draft: false,
     })
     const navigate = useNavigate()
     const dispatch = useDispatch()
+    const hydrateEditorContent = async (data) => {
+        if (!editorjsRef.current || !data?.blocks?.length) return;
+        await editorjsRef.current.clear();
+        await editorjsRef.current.render(data);
+    };
+    useEffect(() => {
+        if (!id && window.location.pathname === "/add-blog") {
+            dispatch(removeSelectedBlog());
 
+            setBlogData({
+                title: "",
+                description: "",
+                image: null,
+                content: { blocks: [] },
+                tags: [],
+                draft: false,
+            });
+        }
+    }, [id]);
     async function handlePostBlog() {
+        const formData = new FormData();
         formData.append("title", blogData.title);
         formData.append("description", blogData.description);
         formData.append("image", blogData.image);
@@ -118,20 +138,55 @@ function AddBlog() {
 
     }
     async function fetchBlogById() {
+        if (!isEdit) return;
+
+        // ✅ If redux is empty, re-fetch from backend
+        if (!content || !content.blocks?.length) {
+            try {
+                const res = await axios.get(
+                    `${import.meta.env.VITE_BACKEND_URL}/blogs/${id}`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                const blog = res.data.blog;
+
+                setBlogData({
+                    title: blog.title,
+                    description: blog.description,
+                    image: blog.image,
+                    content: blog.content,
+                    draft: blog.draft,
+                    tags: blog.tags,
+                });
+                setTimeout(() => hydrateEditorContent(blog.content), 0);
+
+            } catch (err) {
+                toast.error("Failed to load blog");
+            }
+            return;
+        }
+        // ✅ Normal redux → state hydration
         setBlogData({
-            title: title,
-            description: description,
-            image: image,
-            content: content,
-            draft: draft,
-            tags: tags,
+            title,
+            description,
+            image,
+            content,
+            draft,
+            tags,
         });
+        setTimeout(() => hydrateEditorContent(content), 0);
     }
     function initializeEditorjs() {
         editorjsRef.current = new EditorJS({
             holder: "editorjs",
             placeholder: "write something...",
-            data: id ? content : { blocks: [] },
+            data: isEdit && content?.blocks?.length
+                ? content
+                : { blocks: [] },
             tools: {
                 header: {
                     class: Header,
@@ -213,22 +268,23 @@ function AddBlog() {
             fetchBlogById();
         }
     }, [id]);
-
     useEffect(() => {
-        if (editorjsRef.current === null) {
-            initializeEditorjs();
-        }
-        return () => {
+        if (editorjsRef.current) {
+            editorjsRef.current.destroy();
             editorjsRef.current = null;
-            dispatch(setIsOpen(false))
-            if (
-                window.location.pathname !== `/edit/${id}` &&
-                window.location.pathname !== `/blog/${id}`
-            ) {
-                dispatch(removeSelectedBlog());
+        }
+
+        initializeEditorjs();
+
+        return () => {
+            if (editorjsRef.current) {
+                editorjsRef.current.destroy();
+                editorjsRef.current = null;
             }
+            dispatch(setIsOpen(false))
         };
-    }, [])
+    }, [id]);
+
     return token == null ?
         (<Navigate to={"/"} />
         ) : (

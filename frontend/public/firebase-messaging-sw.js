@@ -29,9 +29,6 @@ messaging.onBackgroundMessage((payload) => {
     },
     // vibrate: [200, 100, 200],
     // requireInteraction: true,
-    // WhatsApp / Instagram–like behavior
-    renotify: true,
-    requireInteraction: false,
   };
 
   self.registration.showNotification(title, options);

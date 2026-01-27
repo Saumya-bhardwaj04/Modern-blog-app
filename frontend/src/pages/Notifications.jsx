@@ -25,6 +25,17 @@ function isThisWeek(date) {
   const diff = now - d;
   return diff < 7 * 24 * 60 * 60 * 1000 && !isToday(date);
 }
+function isThisMonth(date) {
+  const d = new Date(date);
+  const now = new Date();
+  return (
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear() &&
+    !isToday(date) &&
+    !isThisWeek(date)
+  );
+}
+
 
 /* merge same notification */
 function mergeNotifications(list) {
@@ -61,11 +72,22 @@ function mergeNotifications(list) {
 
 function Notifications() {
   const { token } = useSelector((state) => state.user);
-
   const [notifications, setNotifications] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function markAllRead() {
+      await axios.patch(
+        `${import.meta.env.VITE_BACKEND_URL}/notifications/mark-all-read`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    }
+
+    markAllRead();
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -76,12 +98,12 @@ function Notifications() {
         const res = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/notifications`,
           {
-            params: { limit: 6, page },
+            params: { limit: 15, page },
             headers: { Authorization: `Bearer ${token}` },
           }
         );
+        setNotifications(prev => [...prev, ...res.data.notifications]);
 
-        setNotifications((prev) => [...prev, ...res.data.notifications]);
         setHasMore(res.data.hasMore);
       } catch (err) {
         console.error(err);
@@ -99,11 +121,11 @@ function Notifications() {
       prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
     );
   }
-
   const mergedNotifications = useMemo(
     () => mergeNotifications(notifications),
     [notifications]
   );
+
 
   function renderNotification(n) {
     const link =
@@ -116,8 +138,8 @@ function Notifications() {
         <div
           className={`relative flex items-center gap-2 p-4 rounded-xl border
           ${!n.isRead
-            ? "bg-blue-50 border-blue-200"
-            : "bg-white border-gray-200"}
+              ? "bg-blue-50 border-blue-200"
+              : "bg-white border-gray-200"}
           hover:shadow-md transition`}
         >
           <img
@@ -177,19 +199,37 @@ function Notifications() {
           .map(renderNotification)}
       </div>
 
-      {hasMore && (
-        <>
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={() => setPage((p) => p + 1)}
-              disabled={loading}
-              className="px-6 py-2 rounded-full border text-sm hover:bg-gray-100 transition"
-            >
-              {loading ? "Loading..." : "Load older notifications"}
-            </button>
-          </div>
-        </>
+      {/* THIS WEEK */}
+      {mergedNotifications.some((n) => isThisMonth(n.createdAt)) && (
+        <p className="text-xs font-semibold text-gray-500 mt-6 mb-2">
+          THIS MONTH
+        </p>
       )}
+
+      <div className="space-y-2">
+        {mergedNotifications
+          .filter((n) => isThisMonth(n.createdAt))
+          .map(renderNotification)}
+      </div>
+
+      <div className="flex justify-center mt-6">
+        {hasMore ? (
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            disabled={loading}
+            className="px-6 py-2 rounded-full border text-sm hover:bg-gray-100 transition"
+          >
+            {loading ? "Loading..." : "Load older notifications"}
+          </button>
+        ) : (
+          !loading && (
+            <p className="text-sm text-gray-400 animate-fadeIn">
+              No more notifications
+            </p>
+          )
+        )}
+      </div>
+
     </div>
   );
 }

@@ -45,4 +45,26 @@ async function markAsRead(req, res) {
   res.sendStatus(200);
 }
 
-module.exports = { getMyNotifications, markAsRead };
+async function getUnreadCount(req, res) {
+  const userId = req.user;
+
+  const count = await Notification.countDocuments({
+    recipient: userId,
+    isRead: false,
+  });
+
+  res.json({ count });
+}
+
+async function markAllAsRead(req, res) {
+  const userId = req.user;
+
+  await Notification.updateMany(
+    { recipient: userId, isRead: false },
+    { $set: { isRead: true } }
+  );
+
+  res.sendStatus(200);
+}
+
+module.exports = { getMyNotifications, markAsRead , getUnreadCount, markAllAsRead};
