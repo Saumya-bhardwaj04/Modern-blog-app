@@ -20,13 +20,18 @@ messaging.onBackgroundMessage((payload) => {
     icon: data.icon || "/logo-192.png",
     badge: data.badge || "/badge-72.png",
     // image: data.image || '/large-preview.jpg', // large preview image (optional)
-    tag: data.tag || `notification-${data.type || 'general'}-${data.postId || 'global'}`,
+    // tag: data.tag || `notification-${data.type || 'general'}-${data.postId || 'global'}`,
+    tag: data.tag || `notification-${data.type}-${data.blogSlug || "global"}-${data.senderUsername || Date.now()}`,
+
     data: {
       url: data.click_action || data.url || '/notifications',
       // any other data you want in click handler
     },
     // vibrate: [200, 100, 200],
     // requireInteraction: true,
+    // WhatsApp / Instagram–like behavior
+    renotify: true,
+    requireInteraction: false,
   };
 
   self.registration.showNotification(title, options);
