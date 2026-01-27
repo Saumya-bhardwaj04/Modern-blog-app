@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { setIsOpen } from "../utils/commentSlice";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { deleteCommentAndReply, setCommentLikes, setComments, setReplies, setUpdatedComments } from "../utils/selectedBlogSlice";
 import formateDate from "../utils/formateDate"
@@ -81,9 +81,12 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
   const [mentionQuery, setMentionQuery] = useState("");
   const [mentionUsers, setMentionUsers] = useState([]);
   const [showMentionBox, setShowMentionBox] = useState(false);
+  const replyRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
+
   /* ---------- mention detection ---------- */
   useEffect(() => {
-    const match = reply.match(/@(\w*)$/);
+    const match = reply.match(/(?:^|\s)@(\w*)/);
     if (!match) {
       setShowMentionBox(false);
       return;
@@ -335,39 +338,57 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
               </div>
 
               {activeReply === comment._id && (
-                <div className="my-4">
+                <div className="my-4 relative overflow-visible">
                   <textarea
                     type="text"
+                    ref={replyRef}
                     value={reply}
                     placeholder="Reply..."
                     className="h-[150px] resize-none drop-shadow w-full p-3 text-lg focus:outline-none"
-                    onChange={(e) => setReply(e.target.value)}
+                    onChange={(e) => {
+                      setReply(e.target.value);
+
+                      const rect = replyRef.current?.getBoundingClientRect();
+                      if (rect) {
+                        setDropdownPos({
+                          top: rect.bottom + 4,
+                          left: rect.left,
+                          width: rect.width,
+                        });
+                      }
+                    }}
                   />
                   {/* mention dropdown */}
                   {showMentionBox && mentionUsers.length > 0 && (
-                    <div className="absolute bg-white border rounded-md shadow-md w-full z-50">
-                      {mentionUsers.map((u) => (
-                        <div
-                          key={u._id}
-                          className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
-                          onClick={() => {
-                            setReply((prev) =>
-                              prev.replace(/@(\w*)$/, `@${u.username} `)
-                            );
-                            setShowMentionBox(false);
-                          }}
-                        >
-                          <img
-                            src={u.profilePic ||
-                              `https://api.dicebear.com/9.x/initials/svg?seed=${u.username}`}
-                            className="w-8 h-8 rounded-full"
-                          />
-                          <div>
-                            <p className="font-medium">{u.username}</p>
-                            <p className="text-xs text-gray-500">{u.name}</p>
-                          </div>
+                    <div
+                      className="fixed bg-white border rounded-md shadow-md z-[99999]"
+                      style={{
+                        top: dropdownPos.top,
+                        left: dropdownPos.left,
+                        width: dropdownPos.width,
+                      }}
+                    >                      {mentionUsers.map((u) => (
+                      <div
+                        key={u._id}
+                        className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => {
+                          setReply((prev) =>
+                            prev.replace(/@(\w*)/, `@${u.username} `)
+                          );
+                          setShowMentionBox(false);
+                        }}
+                      >
+                        <img
+                          src={u.profilePic ||
+                            `https://api.dicebear.com/9.x/initials/svg?seed=${u.username}`}
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <div>
+                          <p className="font-medium">{u.username}</p>
+                          <p className="text-xs text-gray-500">{u.name}</p>
                         </div>
-                      ))}
+                      </div>
+                    ))}
                     </div>
                   )}
                   <button
@@ -378,7 +399,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                   </button>
                 </div>
               )}
-              
+
               {comment.replies.length > 0 && (
                 <div className="pl-6 border-l">
                   <DisplayComments
