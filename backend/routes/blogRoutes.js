@@ -30,6 +30,6 @@ route.get("/search-blogs", searchBlogs)
 route.patch("/save-blog/:id", verifyUser, saveBlog)
 
 // search users in comment mentions
-route.get("/users/search", verifyUser, searchUsers);
+route.get("/users/search", searchUsers);
 
 module.exports = route;

@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { setIsOpen } from "../utils/commentSlice";
-import { useEffect, useState, useRef } from "react";
+import { useState, useRef } from "react";
 import axios from "axios";
 import { deleteCommentAndReply, setCommentLikes, setComments, setReplies, setUpdatedComments } from "../utils/selectedBlogSlice";
 import formateDate from "../utils/formateDate"
@@ -84,7 +84,12 @@ function Comment() {
             }
           }}
         />
-        {showMentionBox && mentionUsers.length > 0 && (
+        {showMentionBox && (
+          <div className="fixed bg-white border p-2 z-[99999]">
+            MENTION BOX TEST
+          </div>
+        )}
+        {/* {showMentionBox && mentionUsers.length > 0 && (
           <div
             className="fixed bg-white border rounded-md shadow-md z-[99999]"
             style={{
@@ -117,7 +122,7 @@ function Comment() {
               </div>
             ))}
           </div>
-        )}
+        )} */}
 
         <button onClick={handleComment} className="bg-green-500 px-7 py-3 my-2 rounded-md">Add</button>
       </div>

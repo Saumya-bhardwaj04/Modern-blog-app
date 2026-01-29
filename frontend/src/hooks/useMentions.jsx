@@ -8,18 +8,20 @@ export function useMentions(text, token) {
 
   // detect @
   useEffect(() => {
-    const match = text.match(/(?:^|\s)@(\w*)$/);
+    const match = text.match(/@(\w*)$/);
     if (!match) {
       setShowMentionBox(false);
       setMentionQuery("");
       return;
     }
+    console.log("MENTION QUERY:", match[1]); // 👈 ADD THIS
     setMentionQuery(match[1]);
   }, [text]);
 
   // fetch users
   useEffect(() => {
     if (!mentionQuery) return;
+    console.log("FETCHING USERS FOR:", mentionQuery);
 
     axios
       .get(
@@ -27,11 +29,15 @@ export function useMentions(text, token) {
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then((res) => {
+        console.log("USERS FOUND:", res.data);
+
         const users = Array.isArray(res.data) ? res.data : [];
         setMentionUsers(users);
         setShowMentionBox(users.length > 0);
-      });
-  }, [mentionQuery, token]);
+      })
+      .catch (err => console.error("MENTION FETCH ERROR", err));
 
-  return { mentionUsers, showMentionBox };
+}, [mentionQuery, token]);
+
+return { mentionUsers, showMentionBox };
 }
