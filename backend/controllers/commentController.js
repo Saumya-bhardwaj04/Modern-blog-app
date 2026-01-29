@@ -433,6 +433,22 @@ async function addNestedComment(req, res) {
         })
     }
 }
+async function searchUsers(req, res) {
+    console.log("🔥 NEW SEARCH USERS HIT", req.query.q);
+    const q = req.query.q?.trim();
+
+    if (!q) {
+        return res.json([]); // ✅ always array
+    }
+
+    const users = await User.find({
+        username: { $regex: q, $options: "i" }, // starts-with is better UX
+    })
+        .select("name username profilePic")
+        .limit(5);
+
+    return res.json(users); // ✅ always array
+}
 
 module.exports = {
     addComment,
@@ -440,4 +456,5 @@ module.exports = {
     editComment,
     likeComment,
     addNestedComment,
+    searchUsers,
 };
