@@ -649,5 +649,20 @@ async function removeFcmToken(req, res) {
 
     res.sendStatus(200);
 }
+async function searchUsers(req, res) {
+    console.log("🔥 NEW SEARCH USERS HIT", req.query.q);
+    const q = req.query.q?.trim();
 
-module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken, removeFcmToken };
+    if (!q) {
+        return res.json([]);
+    }
+
+    const users = await User.find({
+        username: { $regex: q, $options: "i" },
+    })
+        .select("name username profilePic")
+        .limit(10);
+
+    return res.json(users);
+}
+module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken, removeFcmToken,searchUsers };

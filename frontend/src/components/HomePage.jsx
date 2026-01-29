@@ -35,7 +35,7 @@ function HomePage() {
             socket.off("blog:like");
             socket.off("blog:comment");
         };
-    }, []);
+    }, [setBlogs]);
 
 
     return token == null ?
@@ -61,7 +61,7 @@ function HomePage() {
                                 <div className="flex flex-wrap">
                                     {["Technology", "AI", "ChatGPT", "JavaScript", "Mern", "Programming", "Express", "React"].map(
                                         (tag, index) => (
-                                            <Link key={index} to={`/tag/${tag}`}>
+                                            <Link key={index} to={`/tag/${tag.toLowerCase()}`}>
                                                 <div
                                                     key={index}
                                                     className="m-1 cursor-pointer bg-gray-200 text-black  hover:text-white hover:bg-black rounded-full px-5 py-2 flex justify-center items-center"

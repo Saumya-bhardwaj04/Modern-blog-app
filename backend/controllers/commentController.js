@@ -225,7 +225,7 @@ async function editComment(req, res) {
     catch (err) {
         return res.status(500).json({
             success: false,
-            message: "Please try again"
+            message: "Comment cannot be empty"
         })
     }
 }
@@ -419,8 +419,6 @@ async function addNestedComment(req, res) {
                 }
             }
         }
-
-
         return res.status(200).json({
             success: true,
             message: "Reply added successfully",
@@ -429,25 +427,9 @@ async function addNestedComment(req, res) {
     }
     catch (error) {
         return res.status(500).json({
-            message: error.message
+            message: "Reply cannot be empty"
         })
     }
-}
-async function searchUsers(req, res) {
-    console.log("🔥 NEW SEARCH USERS HIT", req.query.q);
-    const q = req.query.q?.trim();
-
-    if (!q) {
-        return res.json([]); // ✅ always array
-    }
-
-    const users = await User.find({
-        username: { $regex: q, $options: "i" }, // starts-with is better UX
-    })
-        .select("name username profilePic")
-        .limit(5);
-
-    return res.json(users); // ✅ always array
 }
 
 module.exports = {
@@ -456,5 +438,4 @@ module.exports = {
     editComment,
     likeComment,
     addNestedComment,
-    searchUsers,
 };

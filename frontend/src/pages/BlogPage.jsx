@@ -226,13 +226,13 @@ function BlogPage() {
                     {token && email === blogData.creator.email && (
                         <div className="flex gap-3 mt-5">
                             <Link to={"/edit/" + blogData.blogId}>
-                                <button className="bg-green-400 px-6 py-2 text-xl rounded">
+                                <button className="bg-green-500 px-6 py-2 text-xl rounded transition  hover:bg-green-600">
                                     Edit
                                 </button>
                             </Link>
                             <button
                                 onClick={handleDeleteBlog}
-                                className="bg-red-500 px-6 py-2 text-xl rounded text-white"
+                                className="bg-red-500 px-6 py-2 text-xl rounded text-white transition hover:bg-red-600"
                             >
                                 Delete
                             </button>

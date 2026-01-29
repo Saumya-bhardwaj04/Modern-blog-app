@@ -2,7 +2,7 @@ const express = require("express");
 const route = express.Router();
 const { createBlog, getBlog, getBlogs, updateBlog, deleteBlog, likeBlog, saveBlog, searchBlogs } = require("../controllers/blogController")
 const verifyUser = require("../middlewares/auth");
-const { addComment, deleteComment, editComment, likeComment, addNestedComment, searchUsers } = require("../controllers/commentController");
+const { addComment, deleteComment, editComment, likeComment, addNestedComment } = require("../controllers/commentController");
 const upload = require("../utils/multer");
 
 //blogs
@@ -28,8 +28,5 @@ route.get("/search-blogs", searchBlogs)
 
 // save blog / bookmark blog
 route.patch("/save-blog/:id", verifyUser, saveBlog)
-
-// search users in comment mentions
-route.get("/users/search", searchUsers);
 
 module.exports = route;

@@ -204,33 +204,31 @@ function Navbar() {
             <div className="sticky top-0 z-50 bg-white max-w-full flex justify-between items-center h-[70px] px-2 sm:px-[30px]  border-b drop-shadow-sm">
                 <div className="flex gap-4 items-center relative">
                     <Link to={token ? "/home" : "/"}>
-                        <div className="">
+                        <div className="cursor-pointer">
                             <img src={logo} alt="logo" />
                         </div>
                     </Link>
                     <div
-                        className={`relative group  max-sm:absolute max-sm:z-40 max-sm:top-16 sm:block ${showSearchBar ? " max-sm:block " : " max-sm:hidden "
-                            }`}>
-                        <i className="fi fi-rr-search absolute text-lg top-1/2 -translate-y-1/2  ml-4 opacity-40"></i>
+                        className={`relative max-sm:absolute max-sm:z-40 max-sm:top-16 sm:block ${showSearchBar ? " max-sm:block " : " max-sm:hidden "}`}>
+                        <i className="fi fi-rr-search absolute text-lg top-1/2 -translate-y-1/2  ml-4 opacity-40 mt-0.5"></i>
                         <input
                             type="text"
                             disabled={isStartPage}
                             className={`bg-gray-100 focus:outline-none max-sm:w-[calc(100vw_-_70px)] rounded-full pl-12 p-2 
-                             ${isStartPage ? "cursor-not-allowed opacity-50" : ""}
-            `}
+                             ${isStartPage ? "cursor-not-allowed opacity-50" : ""}`}
                             placeholder="Search"
                             value={searchQuery ? searchQuery : ""}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => {
                                 if (isStartPage) return;
                                 if (e.code == "Enter" || e.code == "NumpadEnter" || e.keyCode == "13") {
-                                    if (searchQuery.trim()) {
-                                        navigate(`/ search ? q = ${searchQuery.trim()}`);
-                                        setShowSearchBar(false);
-                                        if (showSearchBar) {
-                                            setSearchQuery("");
-                                        }
+                                    const value = searchQuery.trim();
+                                    if (!value || value.length < 2) {
+                                        toast.error("Please enter a valid search term");
+                                        return;
                                     }
+                                    setShowSearchBar(false);
+                                    navigate(`/search?q=${value}`);
                                 }
                             }}
                         />

@@ -23,8 +23,7 @@ function Comment() {
   const { _id: blogId, comments, creator: { _id: creatorId } } = useSelector((state) => state.selectedBlog);
   const { token, id: userId } = useSelector((state) => state.user);
   const commentRef = useRef(null);
-  const { mentionUsers, showMentionBox } = useMentions(comment, token);
-  const [commentDropdownPos, setCommentDropdownPos] = useState({});
+  const { mentionUsers, showMentionBox, loading } = useMentions(comment, token);
   // useEffect(() => {
   //   const handleComment = ({ blogId: id, comment }) => {
   //     if (id !== blog._id) return;
@@ -52,8 +51,7 @@ function Comment() {
       dispatch(setComments(res.data.newComment));
       toast.success(res.data.message);
     } catch (error) {
-      console.log(error.response.data.message);
-
+      toast.error(error.response.data.message);
     }
   }
 
@@ -65,7 +63,7 @@ function Comment() {
         </h1>
         <i onClick={() => dispatch(setIsOpen(false))} className="fi fi-br-cross text-lg mt-1 cursor-pointer"></i>
       </div>
-      <div className="my-4">
+      <div className="my-4 relative">
         <textarea
           ref={commentRef}
           value={comment}
@@ -74,31 +72,21 @@ function Comment() {
           className="h-[150px] resize-none drop-shadow w-full p-3 text-lg focus:outline-none"
           onChange={(e) => {
             setComment(e.target.value);
-            const rect = commentRef.current?.getBoundingClientRect();
-            if (rect) {
-              setCommentDropdownPos({
-                top: rect.bottom + 4,
-                left: rect.left,
-                width: rect.width,
-              });
-            }
-          }}
+          }
+          }
         />
+
         {showMentionBox && (
-          <div className="fixed bg-white border p-2 z-[99999]">
-            MENTION BOX TEST
-          </div>
-        )}
-        {/* {showMentionBox && mentionUsers.length > 0 && (
-          <div
-            className="fixed bg-white border rounded-md shadow-md z-[99999]"
-            style={{
-              top: commentDropdownPos.top,
-              left: commentDropdownPos.left,
-              width: commentDropdownPos.width,
-            }}
-          >
-            {mentionUsers.map((u) => (
+          <div className="absolute bg-white border rounded-md shadow-md z-50 w-full mt-1 max-h-60 overflow-y-auto">
+
+            {loading && (
+              <p className="p-2 text-sm text-gray-400">Searching users…</p>
+            )}
+
+            {!loading && mentionUsers.length === 0 && (
+              <p className="p-2 text-sm text-gray-500">No users found</p>
+            )}
+            {!loading && mentionUsers.map((u) => (
               <div
                 key={u._id}
                 className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
@@ -122,9 +110,8 @@ function Comment() {
               </div>
             ))}
           </div>
-        )} */}
-
-        <button onClick={handleComment} className="bg-green-500 px-7 py-3 my-2 rounded-md">Add</button>
+        )}
+        <button onClick={handleComment} className="bg-green-500 px-7 py-3 my-2 rounded-md transition  hover:bg-green-600">Add</button>
       </div>
       <div className="mt-4">
         <DisplayComments comments={comments || []} userId={userId} blogId={blogId} token={token} activeReply={activeReply} setActieReply={setActieReply} currentPopup={currentPopup} setCurrentPopup={setCurrentPopup} currentEditComment={currentEditComment} setCurrentEditComment={setCurrentEditComment} creatorId={creatorId} />
@@ -138,8 +125,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
   const [updateComment, setUpdateComment] = useState("");
   const dispatch = useDispatch();
   const replyRef = useRef(null);
-  const { mentionUsers, showMentionBox } = useMentions(reply, token);
-  const [replyDropdownPos, setReplyDropdownPos] = useState({});
+  const { mentionUsers, showMentionBox, loading } = useMentions(reply, token);
 
   async function handleReply(parentCommentId) {
     try {
@@ -159,7 +145,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
       dispatch(setReplies(res.data.newReply));
       toast.success(res.data.message);
     } catch (error) {
-      console.log(error.response.data.message);
+      toast.error(error.response.data.message);
     }
   }
   async function handleCommentLike(commentId) {
@@ -175,13 +161,21 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
       dispatch(setCommentLikes({ commentId, userId }))
     } catch (error) {
       console.log(error);
-
     }
   }
   function handleActiveReply(id) {
     setActieReply((prev) => (prev === id ? null : id))
   }
+  function closeReplyBox() {
+    setReply("");
+    setActieReply(null);
+  }
+
   async function handleCommentUpdate(id) {
+    if (!updateComment.trim()) {
+      toast.error("Comment cannot be empty");
+      return;
+    }
     try {
       let res = await axios.patch(`${import.meta.env.VITE_BACKEND_URL}/blogs/edit-comment/${id}`,
         {
@@ -193,7 +187,6 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
           },
         }
       )
-
       dispatch(setUpdatedComments(res.data.updatedComment));
       toast.success(res.data.message);
     } catch (error) {
@@ -263,37 +256,37 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
 
                 {comment.user._id === userId || userId === creatorId ? (
                   currentPopup === comment._id ? (
-                    <div className="bg-gray-200 w-[70px] rounded-lg">
+                    <div className="bg-white border rounded-lg shadow-lg overflow-hidden">
                       <i
                         onClick={() =>
                           setCurrentPopup((prev) =>
                             prev === comment._id ? null : comment._id
                           )
                         }
-                        className="fi fi-br-cross relative left-12 text-sm mt-1 cursor-pointer"
+                        className="fi fi-br-cross relative left-[75%] text-sm mt-1 cursor-pointer"
                       ></i>
 
                       {comment.user._id === userId && (
                         <p
-                          className="p-2 py-1 hover:bg-blue-300"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 cursor-pointer"
                           onClick={() => {
                             setCurrentEditComment(comment._id);
                             setUpdateComment(comment.comment);
                             setCurrentPopup(null);
                           }}
                         >
-                          Edit
+                          ✏️ Edit
                         </p>
                       )}
 
                       <p
-                        className="p-2 py-1 hover:bg-red-300"
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 cursor-pointer"
                         onClick={() => {
                           handleCommentDelete(comment._id);
                           setCurrentPopup(null);
                         }}
                       >
-                        Delete
+                        🗑 Delete
                       </p>
                     </div>
                   ) : (
@@ -317,7 +310,12 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                   <div className="flex gap-2 mt-2">
                     <button
                       onClick={() => handleCommentUpdate(comment._id)}
-                      className="bg-green-500 px-5 py-2 my-2 rounded-md"
+                      disabled={!updateComment.trim()}
+                      className={`px-5 py-2 my-2 rounded-md transition
+                         ${!updateComment.trim()
+                          ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                          : "bg-green-500 hover:bg-green-600"
+                        }`}
                     >
                       Save
                     </button>
@@ -326,7 +324,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                         setCurrentEditComment(null);
                         setUpdateComment("");
                       }}
-                      className="bg-gray-300 px-5 py-2 my-2 rounded-md"
+                      className="bg-gray-300 px-5 py-2 my-2 rounded-md transition hover:bg-gray-500"
                     >
                       Cancel
                     </button>
@@ -370,7 +368,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
               </div>
 
               {activeReply === comment._id && (
-                <div className="my-4 relative overflow-visible">
+                <div className="my-4 relative">
                   <textarea
                     type="text"
                     ref={replyRef}
@@ -379,56 +377,60 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                     className="h-[150px] resize-none drop-shadow w-full p-3 text-lg focus:outline-none"
                     onChange={(e) => {
                       setReply(e.target.value);
-
-                      const rect = replyRef.current?.getBoundingClientRect();
-                      if (rect) {
-                        setReplyDropdownPos({
-                          top: rect.bottom + 4,
-                          left: rect.left,
-                          width: rect.width,
-                        });
-                      }
                     }}
                   />
                   {/* mention dropdown */}
-                  {showMentionBox && mentionUsers.length > 0 && (
-                    <div
-                      className="fixed bg-white border rounded-md shadow-md z-[99999]"
-                      style={{
-                        top: replyDropdownPos.top,
-                        left: replyDropdownPos.left,
-                        width: replyDropdownPos.width,
-                      }}
-                    >{mentionUsers.map((u) => (
-                      <div
-                        key={u._id}
-                        className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => {
-                          setReply((prev) =>
-                            prev.replace(/@(\w*)/, `@${u.username} `)
-                          );
-                        }}
-                      >
-                        <img
-                          src={u.profilePic ||
-                            `https://api.dicebear.com/9.x/initials/svg?seed=${u.username}`}
-                          className="w-8 h-8 rounded-full"
-                        />
-                        <div>
-                          <p className="font-medium">{u.username}</p>
-                          <p className="text-xs text-gray-500">{u.name}</p>
+                  {showMentionBox && (
+                    <div className="absolute bg-white border rounded-md shadow-md z-50 w-full mt-1 max-h-60 overflow-y-auto">
+
+                      {loading && (
+                        <p className="p-2 text-sm text-gray-400">Searching users…</p>
+                      )}
+
+                      {!loading && mentionUsers.length === 0 && (
+                        <p className="p-2 text-sm text-gray-500">No users found</p>
+                      )}
+                      {!loading && mentionUsers.map((u) => (
+                        <div
+                          key={u._id}
+                          className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setReply((prev) =>
+                              prev.replace(/@(\w*)$/, `@${u.username} `)
+                            );
+                          }}
+                        >
+                          <img
+                            src={
+                              u.profilePic ||
+                              `https://api.dicebear.com/9.x/initials/svg?seed=${u.username}`
+                            }
+                            className="w-8 h-8 rounded-full"
+                          />
+                          <div>
+                            <p className="font-medium">{u.username}</p>
+                            <p className="text-xs text-gray-500">{u.name}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                     </div>
                   )}
-                  <button
-                    onClick={() => handleReply(comment._id)}
-                    className="bg-green-500 px-7 py-3 my-2 rounded-md"
-                  >
-                    Add Reply
-                  </button>
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => handleReply(comment._id)}
+                      className="bg-green-500 px-5 py-2 my-2 rounded-md transition hover:bg-green-600"
+                    >
+                      Add Reply
+                    </button>
+                    <button
+                      onClick={closeReplyBox}
+                      className="bg-gray-300 px-5 py-2 my-2 rounded-md transition hover:bg-gray-500"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
+
               )}
 
               {comment.replies.length > 0 && (

@@ -8,7 +8,13 @@ function usePagination(path, queryParams = {}, limit = 1, page = 1) {
   const [hasMore, setHasMore] = useState(true);
   const [blogs, setBlogs] = useState([]);
   const navigate = useNavigate();
-  const [isLoading, startLoading, stopLoading] = useLoader();
+  const [loading, startLoading, stopLoading] = useLoader();
+
+  useEffect(() => {
+    setBlogs([]);
+    setHasMore(true);
+  }, [path, JSON.stringify(queryParams)]);
+
   useEffect(() => {
     async function fetchSeachBlogs() {
       try {
@@ -19,21 +25,21 @@ function usePagination(path, queryParams = {}, limit = 1, page = 1) {
             params: { ...queryParams, limit, page },
           }
         );
-        setBlogs((prev) => [...prev, ...res.data.blogs]);
+        setBlogs((prev) => page === 1 ? res.data.blogs : [...prev, ...res.data.blogs]);
         setHasMore(res?.data?.hasMore);
       } catch (error) {
         navigate(-1);
         setBlogs([]);
-        toast.error(error?.response?.data?.message);
+        toast.error(error?.response?.data?.message || "Something went wrong");
         setHasMore(false);
       } finally {
         stopLoading();
       }
     }
     fetchSeachBlogs();
-  }, [page]);
+  }, [page, path, JSON.stringify(queryParams)]);
 
-  return { blogs, hasMore, isLoading };
+  return { blogs, setBlogs, hasMore, isLoading: loading };
 }
 
 export default usePagination;

@@ -1,5 +1,5 @@
 const express = require("express");
-const { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken, removeFcmToken } = require("../controllers/userController");
+const { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken, removeFcmToken,searchUsers } = require("../controllers/userController");
 const { getMyNotifications, markAsRead, getUnreadCount, markAllAsRead } = require("../controllers/notificationController");
 const verifyUser = require("../middlewares/auth");
 const upload = require("../utils/multer");
@@ -32,5 +32,8 @@ route.post("/save-fcm-token", verifyUser, saveFcmToken);
 route.post("/remove-fcm-token", verifyUser, removeFcmToken);
 
 route.patch("/change-saved-liked-blog-visibility", verifyUser, changeSavedLikedBlog)
+
+// search users in comment mentions
+route.get("/mention/user", searchUsers);
 
 module.exports = route;
