@@ -7,6 +7,7 @@ import formateDate from "../utils/formateDate"
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { formatMentions } from "./formatMentions.jsx";
+import { useMentions } from "../hooks/useMentions";
 
 // prevents duplicate mentions
 function extractMentions(text) {
@@ -21,6 +22,9 @@ function Comment() {
   const [currentEditComment, setCurrentEditComment] = useState(null);
   const { _id: blogId, comments, creator: { _id: creatorId } } = useSelector((state) => state.selectedBlog);
   const { token, id: userId } = useSelector((state) => state.user);
+  const commentRef = useRef(null);
+  const { mentionUsers, showMentionBox } = useMentions(comment, token);
+  const [commentDropdownPos, setCommentDropdownPos] = useState({});
   // useEffect(() => {
   //   const handleComment = ({ blogId: id, comment }) => {
   //     if (id !== blog._id) return;
@@ -62,9 +66,59 @@ function Comment() {
         <i onClick={() => dispatch(setIsOpen(false))} className="fi fi-br-cross text-lg mt-1 cursor-pointer"></i>
       </div>
       <div className="my-4">
-        <textarea value={comment} type="text" placeholder="Comment..." className="h-[150px] resize-none drop-shadow w-full p-3 text-lg focus:outline-none"
-          onChange={(e) => setComment(e.target.value)}
+        <textarea
+          ref={commentRef}
+          value={comment}
+          type="text"
+          placeholder="Comment..."
+          className="h-[150px] resize-none drop-shadow w-full p-3 text-lg focus:outline-none"
+          onChange={(e) => {
+            setComment(e.target.value);
+            const rect = commentRef.current?.getBoundingClientRect();
+            if (rect) {
+              setCommentDropdownPos({
+                top: rect.bottom + 4,
+                left: rect.left,
+                width: rect.width,
+              });
+            }
+          }}
         />
+        {showMentionBox && mentionUsers.length > 0 && (
+          <div
+            className="fixed bg-white border rounded-md shadow-md z-[99999]"
+            style={{
+              top: commentDropdownPos.top,
+              left: commentDropdownPos.left,
+              width: commentDropdownPos.width,
+            }}
+          >
+            {mentionUsers.map((u) => (
+              <div
+                key={u._id}
+                className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => {
+                  setComment((prev) =>
+                    prev.replace(/@(\w*)$/, `@${u.username} `)
+                  );
+                }}
+              >
+                <img
+                  src={
+                    u.profilePic ||
+                    `https://api.dicebear.com/9.x/initials/svg?seed=${u.username}`
+                  }
+                  className="w-8 h-8 rounded-full"
+                />
+                <div>
+                  <p className="font-medium">{u.username}</p>
+                  <p className="text-xs text-gray-500">{u.name}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         <button onClick={handleComment} className="bg-green-500 px-7 py-3 my-2 rounded-md">Add</button>
       </div>
       <div className="mt-4">
@@ -78,37 +132,9 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
   const [reply, setReply] = useState("");
   const [updateComment, setUpdateComment] = useState("");
   const dispatch = useDispatch();
-  const [mentionQuery, setMentionQuery] = useState("");
-  const [mentionUsers, setMentionUsers] = useState([]);
-  const [showMentionBox, setShowMentionBox] = useState(false);
   const replyRef = useRef(null);
-  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
-
-  /* ---------- mention detection ---------- */
-  useEffect(() => {
-    const match = reply.match(/(?:^|\s)@(\w*)/);
-    if (!match) {
-      setShowMentionBox(false);
-      return;
-    }
-    setMentionQuery(match[1]);
-  }, [reply]);
-
-  /* ---------- fetch users ---------- */
-  useEffect(() => {
-    if (!mentionQuery) return;
-
-    axios
-      .get(
-        `${import.meta.env.VITE_BACKEND_URL}/users/search?q=${mentionQuery}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
-      .then((res) => {
-        const users = Array.isArray(res.data) ? res.data : [];
-        setMentionUsers(users);
-        setShowMentionBox(users.length > 0);
-      });
-  }, [mentionQuery, token]);
+  const { mentionUsers, showMentionBox } = useMentions(reply, token);
+  const [replyDropdownPos, setReplyDropdownPos] = useState({});
 
   async function handleReply(parentCommentId) {
     try {
@@ -351,7 +377,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
 
                       const rect = replyRef.current?.getBoundingClientRect();
                       if (rect) {
-                        setDropdownPos({
+                        setReplyDropdownPos({
                           top: rect.bottom + 4,
                           left: rect.left,
                           width: rect.width,
@@ -364,11 +390,11 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                     <div
                       className="fixed bg-white border rounded-md shadow-md z-[99999]"
                       style={{
-                        top: dropdownPos.top,
-                        left: dropdownPos.left,
-                        width: dropdownPos.width,
+                        top: replyDropdownPos.top,
+                        left: replyDropdownPos.left,
+                        width: replyDropdownPos.width,
                       }}
-                    >                      {mentionUsers.map((u) => (
+                    >{mentionUsers.map((u) => (
                       <div
                         key={u._id}
                         className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
@@ -376,7 +402,6 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                           setReply((prev) =>
                             prev.replace(/@(\w*)/, `@${u.username} `)
                           );
-                          setShowMentionBox(false);
                         }}
                       >
                         <img
