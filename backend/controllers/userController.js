@@ -650,6 +650,7 @@ async function removeFcmToken(req, res) {
     res.sendStatus(200);
 }
 async function searchUsers(req, res) {
+    console.log("🔥 NEW SEARCH USERS HIT", req.query.q);
     const q = req.query.q?.trim();
 
     if (!q) {
@@ -657,14 +658,13 @@ async function searchUsers(req, res) {
     }
 
     const users = await User.find({
-        username: { $regex: `^${q}`, $options: "i" }, // starts-with is better UX
+        username: { $regex: q, $options: "i" }, // starts-with is better UX
     })
         .select("name username profilePic")
         .limit(5);
 
     return res.json(users); // ✅ always array
 }
-
 
 
 module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken, removeFcmToken, searchUsers };
