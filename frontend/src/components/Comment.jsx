@@ -104,8 +104,9 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then((res) => {
-        setMentionUsers(res.data || []);
-        setShowMentionBox(true);
+        const users = Array.isArray(res.data) ? res.data : [];
+        setMentionUsers(users);
+        setShowMentionBox(users.length > 0);
       });
   }, [mentionQuery, token]);
 

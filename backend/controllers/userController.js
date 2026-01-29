@@ -651,16 +651,20 @@ async function removeFcmToken(req, res) {
 }
 async function searchUsers(req, res) {
     const q = req.query.q?.trim();
-    if (!q) return res.json([]);
+
+    if (!q) {
+        return res.json([]); // ✅ always array
+    }
 
     const users = await User.find({
-        username: { $regex: q, $options: "i" },
+        username: { $regex: `^${q}`, $options: "i" }, // starts-with is better UX
     })
         .select("name username profilePic")
         .limit(5);
 
-    return res.json(users);
+    return res.json(users); // ✅ always array
 }
+
 
 
 module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken, removeFcmToken, searchUsers };
