@@ -21,10 +21,12 @@ function initSocket(server) {
 
   io.on("connection", (socket) => {
     console.log("🔌 User connected:", socket.id);
-    socket.on("join", (userId) => {
-      socket.join(userId);
-      console.log(`👤 User joined room: ${userId}`);
+
+    socket.on("join:feed", () => {
+      socket.join("feed");
+      console.log("📢 joined feed");
     });
+    
     socket.on("disconnect", () => {
       console.log("❌ User disconnected:", socket.id);
     });

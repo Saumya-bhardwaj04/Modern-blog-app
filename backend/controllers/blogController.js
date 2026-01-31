@@ -64,11 +64,10 @@ async function createBlog(req, res) {
             })
         }
         const io = getIO();
-        if (!draft) {
             const populatedBlog = await Blog.findById(blog._id)
                 .populate("creator", "name username profilePic");
-            io.emit("blog:new", populatedBlog);
-        }
+            io.to("feed").emit("blog:new", populatedBlog);
+
         const followers = author.followers || [];
 
         for (const userId of followers) {
@@ -344,11 +343,16 @@ async function likeBlog(req, res) {
                 sender,
                 blogSlug: blog.blogId,
             });
-            io.to(blog._id.toString()).emit("blog-like", {
+            io.to("feed").emit("blog:like", {
                 blogId: blog._id.toString(),
                 likes: blog.likes.length,
-                userId
             });
+
+            // io.to(`blog:${blog._id}`).emit("blog-like", {
+            //     blogId: blog._id.toString(),
+            //     likes: blog.likes.length,
+            //     userId
+            // });
 
             if (creator.fcmTokens?.length) {
                 sendPush(

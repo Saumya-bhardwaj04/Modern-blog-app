@@ -8,6 +8,7 @@ import Comment from "../components/Comment";
 import { setIsOpen } from "../utils/commentSlice";
 import formateDate from "../utils/formateDate";
 import calculateReadTime from "../components/TimeCalculate";
+import socket from "../utils/socket";
 
 export async function handleSaveBlogs(id, token, dispatch) {
     try {
@@ -57,13 +58,14 @@ function BlogPage() {
     const [loading, setLoading] = useState(true);
     const readTime = calculateReadTime(blogData?.content);
     const [isLike, setIsLike] = useState(false)
-    // useEffect(() => {
-    //     if (!blogId) return;
-    //     socket.emit("join", blogId);
-    //     return () => {
-    //         socket.emit("leave", blogId);
-    //     };
-    // }, [blogId]);
+    useEffect(() => {
+        if (!blogData?._id) return;
+        socket.emit("join:blog", blogData._id);
+        return () => {
+            socket.emit("leave:blog", blogData._id);
+        };
+    }, [blogData?._id]);
+
     // useEffect(() => {
     //     const handleLike = ({ blogId: id, likes }) => {
     //         if (id !== blog._id) return;

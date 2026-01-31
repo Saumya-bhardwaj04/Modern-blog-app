@@ -41,7 +41,7 @@ async function addComment(req, res) {
             $push: { comments: newComment._id },
         })
         const io = getIO();
-        io.emit("blog:comment", {
+        io.to("feed").emit("blog:comment", {
             blogId: blog._id.toString(),
         });
         // 🔔 notify only if not self

@@ -55,7 +55,7 @@ function Navbar() {
             return;
         }
         socket.connect();
-        socket.emit("join", userId);
+        socket.emit("join:user", userId);
         return () => {
             socket.off("notification");
             socket.disconnect();

@@ -9,9 +9,14 @@ function HomePage() {
     const [page, setPage] = useState(1);
     const { token, id: userId } = useSelector((state) => state.user);
     const { blogs, setBlogs, hasMore, isLoading } = usePagination("blogs", {}, 4, page);
+    useEffect(() => {
+        if (!socket.connected) socket.connect();
+        socket.emit("join:feed");
+    }, []);
 
     useEffect(() => {
-        if (!token) return;
+        // if (!token || !socket.connected) return;
+        // socket.emit("join:feed");
 
         const onNewBlog = (blog) => {
             setBlogs(prev => {
@@ -41,12 +46,12 @@ function HomePage() {
         };
 
         socket.on("blog:new", onNewBlog);
-        socket.on("blog-like", onBlogLike);
+        socket.on("blog:like", onBlogLike);
         socket.on("blog:comment", onBlogComment);
 
         return () => {
             socket.off("blog:new", onNewBlog);
-            socket.off("blog-like", onBlogLike);
+            socket.off("blog:like", onBlogLike);
             socket.off("blog:comment", onBlogComment);
         };
     }, [token, setBlogs]);
