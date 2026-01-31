@@ -40,10 +40,13 @@ async function addComment(req, res) {
         await Blog.findByIdAndUpdate(id, {
             $push: { comments: newComment._id },
         })
+        const io = getIO();
+        io.emit("blog:comment", {
+            blogId: blog._id.toString(),
+            comment: newComment,
+        });
         // 🔔 notify only if not self
         if (blog.creator.toString() !== userId.toString()) {
-            const io = getIO();
-
             await Notification.create({
                 recipient: blog.creator,
                 sender: userId,
@@ -59,19 +62,19 @@ async function addComment(req, res) {
                 sender,
                 blogSlug: blog.blogId,
             })
-            io.to(blog._id.toString()).emit("blog-comment", {
-                blogId: blog._id.toString(),
-                comment: {
-                    _id: comment._id,
-                    content: comment.content,
-                    user: {
-                        name: sender.name,
-                        username: sender.username,
-                        profilePic: sender.profilePic
-                    },
-                    createdAt: comment.createdAt
-                }
-            });
+            // io.to(blog._id.toString()).emit("blog-comment", {
+            //     blogId: blog._id.toString(),
+            //     comment: {
+            //         _id: comment._id,
+            //         content: comment.content,
+            //         user: {
+            //             name: sender.name,
+            //             username: sender.username,
+            //             profilePic: sender.profilePic
+            //         },
+            //         createdAt: comment.createdAt
+            //     }
+            // });
             if (creator.fcmTokens?.length) {
                 sendPush(
                     creator.fcmTokens,
@@ -252,13 +255,15 @@ async function likeComment(req, res) {
         }
 
         await comment.save();
-
+        const io = getIO();
+        io.emit("comment-like", {
+            commentId: comment._id.toString(),
+            likes: comment.likes.length,
+        });
         if (
             !alreadyLiked &&
             comment.user.toString() !== userId.toString()
         ) {
-            const io = getIO();
-
             await Notification.create({
                 recipient: comment.user,
                 sender: userId,
@@ -335,16 +340,21 @@ async function addNestedComment(req, res) {
             .then((reply) => {
                 return reply.populate({
                     path: "user",
-                    select: "name email"
+                    select: "name email profilePic"
                 })
             });
         await Comment.findByIdAndUpdate(parentCommentId, {
             $push: { replies: newReply._id }
         });
+        const io = getIO();
+
+        // 🔥 REAL-TIME REPLY
+        io.emit("comment-reply", {
+            parentCommentId,
+            reply: newReply,
+        });
         // 🔔 notify parent comment owner (if not self)
         if (comment.user.toString() !== userId.toString()) {
-            const io = getIO();
-
             await Notification.create({
                 recipient: comment.user,
                 sender: userId,
@@ -377,7 +387,7 @@ async function addNestedComment(req, res) {
                 );
             }
         }
-        
+
         if (mentionedUsernames.length) {
             const mentionedUsers = await User.find({
                 username: { $in: mentionedUsernames },

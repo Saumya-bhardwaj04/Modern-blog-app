@@ -9,17 +9,24 @@ function HomePage() {
     const [page, setPage] = useState(1);
     const { token, id: userId } = useSelector((state) => state.user);
     const { blogs, setBlogs, hasMore, isLoading } = usePagination("blogs", {}, 4, page);
+
     useEffect(() => {
+        socket.connect(); // ✅ CONNECT FIRST
         socket.on("blog:new", (blog) => {
-            setBlogs((prev) => [blog, ...prev]);
+            setBlogs((prev) => {
+                if (prev.find((b) => b._id === blog._id)) return prev;
+                return [blog, ...prev];
+            });
         });
-        socket.on("blog:like", ({ blogId, likesCount }) => {
+
+        socket.on("blog-like", ({ blogId, likes }) => {
             setBlogs((prev) =>
                 prev.map((b) =>
-                    b._id === blogId ? { ...b, likes: Array(likesCount) } : b
+                    b._id === blogId ? { ...b, likes: Array(likes) } : b
                 )
             );
         });
+
         socket.on("blog:comment", ({ blogId }) => {
             setBlogs((prev) =>
                 prev.map((b) =>
@@ -32,11 +39,10 @@ function HomePage() {
 
         return () => {
             socket.off("blog:new");
-            socket.off("blog:like");
+            socket.off("blog-like");
             socket.off("blog:comment");
         };
     }, [setBlogs]);
-
 
     return token == null ?
         (<Navigate to={"/"} />
