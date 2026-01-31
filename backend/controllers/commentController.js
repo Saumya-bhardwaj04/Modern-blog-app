@@ -43,7 +43,6 @@ async function addComment(req, res) {
         const io = getIO();
         io.emit("blog:comment", {
             blogId: blog._id.toString(),
-            comment: newComment,
         });
         // 🔔 notify only if not self
         if (blog.creator.toString() !== userId.toString()) {
