@@ -20,7 +20,8 @@ const notificationSchema = new mongoose.Schema(
         "follow",
         "comment_like",      
         "comment_reply", 
-        "mention",    
+        "mention",
+        "new_blog"    
       ],
       required: true,
     },
