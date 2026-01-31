@@ -136,8 +136,9 @@ function Notifications() {
     const link =
       n.type === "follow"
         ? `/@${n.sender?.username}`
-        : `/blog/${n.blog?.blogId}#comments`;
-
+        : n.type === "new_blog"
+          ? `/blog/${n.blog?.blogId}`
+          : `/blog/${n.blog?.blogId}#comments`;
 
     return (
       <Link key={n._id} to={link} onClick={() => handleClick(n._id)} className="block">
@@ -164,6 +165,7 @@ function Notifications() {
             {n.type === "comment_like" && "liked your comment"}
             {n.type === "comment_reply" && "replied to your comment"}
             {n.type === "mention" && "mentioned you in a comment"}
+            {n.type === "new_blog" && "posted a new blog"}
           </div>
 
           <span className="absolute bottom-2 right-3 text-[11px] text-gray-400">

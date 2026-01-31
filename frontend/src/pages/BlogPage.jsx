@@ -22,6 +22,7 @@ export async function handleSaveBlogs(id, token, dispatch) {
         toast.error(error.response?.data?.message || "Unable to save blog");
     }
 }
+
 export async function handleFollowCreator(id, token, dispatch) {
     try {
         let res = await axios.patch(`${import.meta.env.VITE_BACKEND_URL}/follow/${id}`, {}, {
@@ -38,6 +39,7 @@ export async function handleFollowCreator(id, token, dispatch) {
         return false;
     }
 }
+
 function BlogPage() {
     const { id } = useParams();
     const dispatch = useDispatch();
@@ -232,8 +234,7 @@ function BlogPage() {
                             </Link>
                             <button
                                 onClick={handleDeleteBlog}
-                                className="bg-red-500 px-6 py-2 text-xl rounded text-white transition hover:bg-red-600"
-                            >
+                                className="bg-red-500 px-6 py-2 text-xl rounded text-white transition hover:bg-red-600">
                                 Delete
                             </button>
                         </div>
@@ -333,7 +334,6 @@ function BlogPage() {
                     <Comment />
                 </>
             )}
-
         </div>
     )
 }

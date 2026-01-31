@@ -36,7 +36,7 @@ function ProfilePage() {
           if (error?.response?.status === 404) {
             setNotFound(true);
           } else {
-            toast.error(error.response?.data?.message ||  "Something went wrong");
+            toast.error(error.response?.data?.message || "Something went wrong");
           }
 
         }
@@ -88,7 +88,7 @@ function ProfilePage() {
     }
   }
   if (notFound) {
-    return <Navigate to="/404" replace/>;
+    return <Navigate to="/404" replace />;
   }
 
   if (loading || !userData) {

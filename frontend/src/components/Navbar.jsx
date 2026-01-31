@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, Outlet, useNavigate, useLocation } from "react-router-dom"
-import logo from "../../public/logo.jpg"
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import logo from "../../public/logo.jpg";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "../utils/userSlice.js";
 import toast from "react-hot-toast";
@@ -101,7 +101,10 @@ function Navbar() {
                                 }`);
                         } else if (data.type === "follow") {
                             navigate(`/ @${sender.username}`);
+                        } else if (data.type === "new_blog") {
+                            navigate(`/blog/${data.blogSlug}`);
                         }
+
                     }}
                 >
                     <NotificationToast t={t} data={data} />
@@ -311,7 +314,7 @@ function Navbar() {
                                     <i className="fi fi-rr-settings mt-1"></i>Setting</p>
                             </Link>
                             <hr className="my-1 border-gray-200" />
-                            <p className="popup rounded-b-xl flex items-center gap-2" onClick={handleLogout}>
+                            <p className="popup rounded-b-xl flex items-center gap-2 hover:bg-red-400" onClick={handleLogout}>
                                 <i className="fi fi-rr-sign-out-alt mt-1"></i>Logout
                             </p>
                         </div >) : null

@@ -56,7 +56,7 @@ function SearchBlogs() {
       {hasMore && !loading && (
         <button
           onClick={() => setPage((prev) => prev + 1)}
-          className="rounded-3xl mx-auto bg-blue-500 text-white px-7 py-2"
+          className="rounded-3xl mx-auto bg-black text-white px-7 py-2"
         >
           Load more
         </button>

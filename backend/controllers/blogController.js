@@ -32,9 +32,11 @@ async function createBlog(req, res) {
                 message: "please add some content"
             })
         }
-        const findUser = await User.findById(creator)
-        if (!findUser) {
-            return res.status(500).json({ message: "Not a Valid User" })
+        const author = await User.findById(creator)
+            .select("name username profilePic followers fcmTokens");
+
+        if (!author) {
+            return res.status(500).json({ message: "Not a Valid User" });
         }
         //cloudinary
         let imageIndex = 0;
@@ -65,9 +67,51 @@ async function createBlog(req, res) {
         if (!draft) {
             const populatedBlog = await Blog.findById(blog._id)
                 .populate("creator", "name username profilePic");
-
             io.emit("blog:new", populatedBlog);
         }
+        const followers = author.followers || [];
+
+        for (const userId of followers) {
+            if (userId.toString() === creator.toString()) continue;
+
+            // save notification
+            await Notification.create({
+                recipient: userId,
+                sender: creator,
+                type: "new_blog",
+                blog: blog._id,
+            });
+
+            // socket notification
+            io.to(userId.toString()).emit("notification", {
+                type: "new_blog",
+                blogSlug: blog.blogId,
+                sender: {
+                    username: author.username,
+                    name: author.name,
+                    profilePic: author.profilePic,
+                },
+            });
+
+            // 🔔 OPTIONAL: push notification
+            const follower = await User.findById(userId).select("fcmTokens");
+            if (follower?.fcmTokens?.length) {
+                await sendPush(
+                    follower.fcmTokens,
+                    "New blog published ✍️",
+                    `${author.name} posted a new blog`,
+                    {
+                        type: "new_blog",
+                        blogSlug: blog.blogId,
+                        senderName: author.name,
+                        senderUsername: author.username,
+                        senderProfilePic: author.profilePic,
+                        click_action: `/blog/${blog.blogId}`,
+                    }
+                );
+            }
+        }
+
         return res.status(200).json({
             success: true,
             message: "Blog created Successfully",
