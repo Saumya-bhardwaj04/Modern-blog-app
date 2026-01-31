@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { setIsOpen } from "../utils/commentSlice";
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { deleteCommentAndReply, setCommentLikes, setComments, setReplies, setUpdatedComments } from "../utils/selectedBlogSlice";
 import formateDate from "../utils/formateDate"
@@ -24,6 +24,8 @@ function Comment() {
   const { token, id: userId } = useSelector((state) => state.user);
   const commentRef = useRef(null);
   const { mentionUsers, showMentionBox, loading } = useMentions(comment, token);
+    const loggedInUser = useSelector((state) => state.user);
+
   // useEffect(() => {
   //   const handleComment = ({ blogId: id, comment }) => {
   //     if (id !== blog._id) return;
@@ -77,38 +79,49 @@ function Comment() {
         />
 
         {showMentionBox && (
-          <div className="absolute bg-white border rounded-md shadow-md z-50 w-full mt-1 max-h-60 overflow-y-auto">
+          <div className="absolute bg-white border rounded-md shadow-md z-50 w-full mt-1 max-h-60 overflow-y-auto  no-scrollbar">
 
             {loading && (
               <p className="p-2 text-sm text-gray-400">Searching users…</p>
             )}
-
             {!loading && mentionUsers.length === 0 && (
-              <p className="p-2 text-sm text-gray-500">No users found</p>
-            )}
-            {!loading && mentionUsers.map((u) => (
-              <div
-                key={u._id}
-                className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
-                onClick={() => {
-                  setComment((prev) =>
-                    prev.replace(/@(\w*)$/, `@${u.username} `)
-                  );
-                }}
-              >
-                <img
-                  src={
-                    u.profilePic ||
-                    `https://api.dicebear.com/9.x/initials/svg?seed=${u.username}`
-                  }
-                  className="w-8 h-8 rounded-full"
-                />
-                <div>
-                  <p className="font-medium">{u.username}</p>
-                  <p className="text-xs text-gray-500">{u.name}</p>
-                </div>
-              </div>
-            ))}
+                        <p className="p-2 text-sm text-gray-500">No users found</p>
+                      )}
+            {!loading && mentionUsers.map((u) => {
+  const isMe = u._id === loggedInUser.id;
+
+  const displayName = isMe ? loggedInUser.name : u.name;
+  const displayProfilePic = isMe
+    ? loggedInUser.profilePic
+    : u.profilePic;
+
+  return (
+    <div
+      key={u._id}
+      className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
+      onClick={() => {
+        setComment((prev) =>
+          prev.replace(/@(\w*)$/, `@${u.username} `)
+        );
+      }}
+    >
+      <img
+        src={
+          displayProfilePic ||
+          `https://api.dicebear.com/9.x/initials/svg?seed=${displayName}`
+        }
+        className="w-8 h-8 rounded-full object-cover"
+        alt={u.username}
+      />
+
+      <div>
+        <p className="font-medium">{u.username}</p>
+        <p className="text-xs text-gray-500">{u.name}</p>
+      </div>
+    </div>
+  );
+})}
+
           </div>
         )}
         <button onClick={handleComment} className="bg-green-500 px-7 py-3 my-2 rounded-md transition  hover:bg-green-600">Add</button>
@@ -381,7 +394,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                   />
                   {/* mention dropdown */}
                   {showMentionBox && (
-                    <div className="absolute bg-white border rounded-md shadow-md z-50 w-full mt-1 max-h-60 overflow-y-auto">
+                    <div className="absolute bg-white border rounded-md shadow-md z-50 w-full mt-1 max-h-60 overflow-y-auto no-scrollbar">
 
                       {loading && (
                         <p className="p-2 text-sm text-gray-400">Searching users…</p>
@@ -390,29 +403,41 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                       {!loading && mentionUsers.length === 0 && (
                         <p className="p-2 text-sm text-gray-500">No users found</p>
                       )}
-                      {!loading && mentionUsers.map((u) => (
-                        <div
-                          key={u._id}
-                          className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
-                          onClick={() => {
-                            setReply((prev) =>
-                              prev.replace(/@(\w*)$/, `@${u.username} `)
-                            );
-                          }}
-                        >
-                          <img
-                            src={
-                              u.profilePic ||
-                              `https://api.dicebear.com/9.x/initials/svg?seed=${u.username}`
-                            }
-                            className="w-8 h-8 rounded-full"
-                          />
-                          <div>
-                            <p className="font-medium">{u.username}</p>
-                            <p className="text-xs text-gray-500">{u.name}</p>
-                          </div>
-                        </div>
-                      ))}
+            {!loading && mentionUsers.map((u) => {
+  const isMe = u._id === loggedInUser.id;
+
+  const displayName = isMe ? loggedInUser.name : u.name;
+  const displayProfilePic = isMe
+    ? loggedInUser.profilePic
+    : u.profilePic;
+
+  return (
+    <div
+      key={u._id}
+      className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
+      onClick={() => {
+        setReply((prev) =>
+          prev.replace(/@(\w*)$/, `@${u.username} `)
+        );
+      }}
+    >
+      <img
+        src={
+          displayProfilePic ||
+          `https://api.dicebear.com/9.x/initials/svg?seed=${displayName}`
+        }
+        className="w-8 h-8 rounded-full object-cover"
+        alt={u.username}
+      />
+
+      <div>
+        <p className="font-medium">{u.username}</p>
+        <p className="text-xs text-gray-500">{u.name}</p>
+      </div>
+    </div>
+  );
+})}
+
                     </div>
                   )}
                   <div className="flex gap-2 mt-2">

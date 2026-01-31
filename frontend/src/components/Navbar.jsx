@@ -10,6 +10,7 @@ import socket from "../utils/socket";
 import { messaging, onMessage } from "../utils/firebase.js";
 import NotificationToast from "./NotificationToast.jsx";
 import axios from "axios";
+import useDebounce from "../hooks/useDebounce.jsx";
 
 function Navbar() {
     const { token, name, profilePic, username, id: userId } = useSelector((state) => state.user);
@@ -17,10 +18,18 @@ function Navbar() {
     const dispatch = useDispatch()
     const location = useLocation();
     const [showPopup, setShowPopup] = useState(false);
-    const [searchQuery, setSearchQuery] = useState(null);
+    // const [searchQuery, setSearchQuery] = useState(null);
     const [showSearchBar, setShowSearchBar] = useState(false);
     const isStartPage = location.pathname === "/" || location.pathname === "/signin" || location.pathname === "/signup";
     const [hasUnread, setHasUnread] = useState(false);
+    const [searchInput, setSearchInput] = useState("");
+    const debouncedSearch = useDebounce(searchInput, 400);
+
+    useEffect(() => {
+        if (!debouncedSearch || debouncedSearch.length < 2) return;
+        navigate(`/search?q=${debouncedSearch}`);
+    }, [debouncedSearch]);
+
     const fetchUnreadCount = async () => {
         if (!token) return;
         try {
@@ -188,16 +197,23 @@ function Navbar() {
         toast.success("Logged out successfully");
         navigate("/")
     }
+    // useEffect(() => {
+    //     if (window.location.pathname !== "/search") {
+    //         setSearchQuery(null);
+    //     }
+    //     return () => {
+    //         if (window.location.pathname !== "/") {
+    //             setShowPopup(false);
+    //         }
+    //     };
+    // }, [window.location.pathname]);
+
     useEffect(() => {
-        if (window.location.pathname !== "/search") {
-            setSearchQuery(null);
+        // clear search input when leaving search page
+        if (!location.pathname.startsWith("/search")) {
+            setSearchInput("");
         }
-        return () => {
-            if (window.location.pathname !== "/") {
-                setShowPopup(false);
-            }
-        };
-    }, [window.location.pathname]);
+    }, [location.pathname]);
 
     return (
         <>
@@ -217,20 +233,21 @@ function Navbar() {
                             className={`bg-gray-100 focus:outline-none max-sm:w-[calc(100vw_-_70px)] rounded-full pl-12 p-2 
                              ${isStartPage ? "cursor-not-allowed opacity-50" : ""}`}
                             placeholder="Search"
-                            value={searchQuery ? searchQuery : ""}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (isStartPage) return;
-                                if (e.code == "Enter" || e.code == "NumpadEnter" || e.keyCode == "13") {
-                                    const value = searchQuery.trim();
-                                    if (!value || value.length < 2) {
-                                        toast.error("Please enter a valid search term");
-                                        return;
-                                    }
-                                    setShowSearchBar(false);
-                                    navigate(`/search?q=${value}`);
-                                }
-                            }}
+                            // value={searchQuery ? searchQuery : ""}
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                        // onKeyDown={(e) => {
+                        //     if (isStartPage) return;
+                        //     if (e.code == "Enter" || e.code == "NumpadEnter" || e.keyCode == "13") {
+                        //         const value = searchQuery.trim();
+                        //         if (!value || value.length < 2) {
+                        //             toast.error("Please enter a valid search term");
+                        //             return;
+                        //         }
+                        //         setShowSearchBar(false);
+                        //         navigate(`/search?q=${value}`);
+                        //     }
+                        // }}
                         />
                         {isStartPage && (
                             <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-sm px-3 py-1 rounded-md whitespace-nowrap z-50">

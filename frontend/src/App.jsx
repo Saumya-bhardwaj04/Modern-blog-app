@@ -12,6 +12,7 @@ import Setting from "./components/Setting";
 import StartPage from "./pages/StartPage";
 import { useEffect } from "react";
 import Notifications from "./pages/Notifications";
+import NotFound from "./pages/NotFound";
 
 function App() {
   useEffect(() => {
@@ -26,22 +27,31 @@ function App() {
     <Routes>
       <Route path="/" element={<Navbar />}>
         <Route index element={<StartPage />} />
+
         <Route path="/home" element={<HomePage />}></Route>
         <Route path="/signin" element={<AuthForm type={"signin"} />}></Route>
         <Route path="/signup" element={<AuthForm type={"signup"} />}></Route>
+
         <Route path="/add-blog" element={<AddBlog />}></Route>
         <Route path="/blog/:id" element={<BlogPage />}></Route>
         <Route path="/edit/:id" element={<AddBlog />}></Route>
+
         <Route path="/search" element={<SearchBlogs />}></Route>
         <Route path="/tag/:tag" element={<SearchBlogs />}></Route>
+
         <Route path="/verify-email/:verificationToken" element={<VerifyUser />}></Route>
+        
         <Route path="/:username" element={<ProfilePage />}></Route>
         <Route path="/:username/saved-blogs" element={<ProfilePage />}></Route>
         <Route path="/:username/liked-blogs" element={<ProfilePage />}></Route>
         <Route path="/:username/draft-blogs" element={<ProfilePage />}></Route>
+
         <Route path="/edit-profile" element={<EditProfile />}></Route>
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/setting" element={<Setting />} />
+
+        <Route path="*" element={<NotFound />} />
+        <Route path="404" element={<NotFound />} />
       </Route>
     </Routes>
   );

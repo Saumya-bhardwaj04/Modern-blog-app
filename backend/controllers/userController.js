@@ -358,9 +358,9 @@ async function getUserById(req, res) {
                 },
             }).select("-password -verify -__v -email -googleAuth")
         if (!user) {
-            return res.status(200).json({
+            return res.status(404).json({
                 success: false,
-                message: "User not found",
+                message: "This user does not exist",
                 user
             })
         }
