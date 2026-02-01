@@ -164,7 +164,7 @@ function Navbar() {
     async function unregisterFcmToken(authToken) {
         try {
             const lastSentToken = localStorage.getItem("last_fcm_token");
-            if (lastSentToken && lastSentToken !== fcmToken) {
+            if (lastSentToken && lastSentToken !== authToken) {
                 await axios.post(
                     `${import.meta.env.VITE_BACKEND_URL}/remove-fcm-token`,
                     { token: lastSentToken },
