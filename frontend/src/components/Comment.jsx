@@ -227,7 +227,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
       toast.success(res.data.message || "Like updated");
       // dispatch(setCommentLikes({ commentId, userId }))
     } catch (error) {
-      console.log(error);
+      toast.error(error.response.data.message);
     }
   }
   function handleActiveReply(id) {

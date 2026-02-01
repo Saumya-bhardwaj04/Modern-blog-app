@@ -1,9 +1,17 @@
+function getInitials(name = "") {
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() || "U";
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
 function NotificationToast({ t, data }) {
   const sender = {
     name:
       data?.sender?.name ||
       data?.senderName ||
-      "Someone",
+      data?.sender?.username ||
+      data?.senderUsername ||
+      "User",
 
     username:
       data?.sender?.username ||
@@ -17,6 +25,8 @@ function NotificationToast({ t, data }) {
         : null,
   };
 
+  const initials = getInitials(sender.name);
+
   const avatarSrc = sender.profilePic
     ? sender.profilePic
     : `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(
@@ -24,17 +34,13 @@ function NotificationToast({ t, data }) {
       )}`;
 
   return (
-    <div
-      className="w-[300px] min-h-[80px] bg-white rounded-2xl shadow-xl border
-      flex items-center gap-4 px-4 py-3 cursor-pointer"
-    >
+    <div className="w-[300px] min-h-[80px] bg-white rounded-2xl shadow-xl border flex items-center gap-4 px-4 py-3 cursor-pointer">
       <img
         src={avatarSrc}
         alt={sender.name}
         className="w-10 h-10 rounded-full object-cover bg-gray-100"
         onError={(e) => {
-          e.currentTarget.src =
-            "https://api.dicebear.com/9.x/initials/svg?seed=U";
+          e.currentTarget.src = `https://api.dicebear.com/9.x/initials/svg?seed=${initials}`;
         }}
       />
 

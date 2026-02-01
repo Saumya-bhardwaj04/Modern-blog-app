@@ -680,7 +680,6 @@ async function removeFcmToken(req, res) {
     res.sendStatus(200);
 }
 async function searchUsers(req, res) {
-    console.log("🔥 NEW SEARCH USERS HIT", req.query.q);
     const q = req.query.q?.trim();
 
     if (!q) {

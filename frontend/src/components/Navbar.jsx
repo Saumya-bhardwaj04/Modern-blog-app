@@ -137,7 +137,6 @@ function Navbar() {
     useEffect(() => {
         if (!token) return;
         const unsubscribe = onMessage(messaging, (payload) => {
-            console.log("🔥 FCM PAYLOAD RECEIVED:", payload);
 
             const d = payload.data;
 

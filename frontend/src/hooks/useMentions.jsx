@@ -15,7 +15,6 @@ export function useMentions(text, token) {
       setMentionQuery("");
       return;
     }
-    console.log("MENTION QUERY:", match[1]); // 👈 ADD THIS
     setMentionQuery(match[1]);
     setShowMentionBox(true);
   }, [text]);
@@ -23,7 +22,6 @@ export function useMentions(text, token) {
   // fetch users
   useEffect(() => {
     if (!mentionQuery) return;
-    console.log("FETCHING USERS FOR:", mentionQuery);
     setLoading(true);
 
     axios
@@ -32,7 +30,6 @@ export function useMentions(text, token) {
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then((res) => {
-        console.log("USERS FOUND:", res.data);
 
         const users = Array.isArray(res.data)
           ? res.data

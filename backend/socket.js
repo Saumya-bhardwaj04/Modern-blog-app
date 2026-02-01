@@ -20,9 +20,12 @@ function initSocket(server) {
   });
 
   io.on("connection", (socket) => {
-    console.log("🔌 User connected:", socket.id);
+    console.log("User connected:", socket.id);
 
     socket.on("join:feed", () => {
+      socket.join("feed");
+    });
+    socket.on("leave:feed", () => {
       socket.join("feed");
     });
     socket.on("join:user", (userId) => {
@@ -39,7 +42,7 @@ function initSocket(server) {
     });
     
     socket.on("disconnect", () => {
-      console.log("❌ User disconnected:", socket.id);
+      console.log("User disconnected:", socket.id);
     });
   });
 

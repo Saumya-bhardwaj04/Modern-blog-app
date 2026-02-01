@@ -128,7 +128,6 @@ function Notifications() {
     socket.emit("join:user", userId);
 
     const onNotification = (data) => {
-      console.log("🔔 live notification:", data);
       const normalized = {
         _id: `socket-${Date.now()}`,
         type: data.type,

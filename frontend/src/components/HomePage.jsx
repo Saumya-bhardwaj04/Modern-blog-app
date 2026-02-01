@@ -14,19 +14,23 @@ function HomePage() {
         if (!socket.connected) socket.connect();
         socket.emit("join:feed");
         return () => {
-            socket.disconnect();
+            socket.emit("leave:feed");
         }
     }, []);
 
     useEffect(() => {
         const onNewBlog = (blog) => {
-            setBlogs((prev) =>
-                prev.some((b) => b._id === blog._id) ? prev : [blog, ...prev]
-            )
+            setBlogs(prev => {
+                if (prev.some(b => b._id === blog._id)) return prev;
+                const next = [...prev, blog];
+                next.sort(
+                    (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                );
+                return next;
+            });
         };
 
         const onBlogLike = ({ blogId, likesCount }) => {
-            console.log("🔥 blog:like received", blogId, likesCount);
             setBlogs(prev =>
                 prev.map(b =>
                     b._id === blogId ? { ...b, likes: new Array(likesCount).fill("x") } : b
@@ -34,7 +38,6 @@ function HomePage() {
             );
         };
         const onBlogDelete = ({ blogId }) => {
-            console.log("🗑️ blog:delete received", blogId);
 
             setBlogs(prev =>
                 prev.filter(b => b._id !== blogId)
@@ -49,7 +52,7 @@ function HomePage() {
                 )
             );
         };
-        const onCommentDelete = ({ blogId, commentsCount  }) => {
+        const onCommentDelete = ({ blogId, commentsCount }) => {
             setBlogs(prev =>
                 prev.map(b =>
                     b._id === blogId
@@ -64,6 +67,9 @@ function HomePage() {
                     b._id === blogId ? { ...b, ...data } : b
                 )
             );
+        };
+        const onBlogDraft = ({ blogId }) => {
+            setBlogs(prev => prev.filter(b => b._id !== blogId));
         };
         const onUserUpdate = ({ userId, name, profilePic }) => {
             setBlogs(prev =>
@@ -95,6 +101,7 @@ function HomePage() {
         socket.on("blog:update", onBlogUpdate);
         socket.on("user:update", onUserUpdate);
         socket.on("user:delete", onUserDelete);
+        socket.on("blog:draft", onBlogDraft);
 
         return () => {
             socket.off("blog:new", onNewBlog);
@@ -105,6 +112,7 @@ function HomePage() {
             socket.off("blog:update", onBlogUpdate);
             socket.off("user:update", onUserUpdate);
             socket.off("user:delete", onUserDelete);
+            socket.off("blog:draft", onBlogDraft);
         };
     }, [setBlogs]);
 

@@ -84,7 +84,6 @@ function AddBlog() {
                     }
                 }
             )
-            console.log(URL.createObjectURL(blogData.image));
             toast.success(res.data.message)
             navigate("/home")
         } catch (error) {

@@ -10,7 +10,7 @@ import formateDate from "../utils/formateDate";
 import calculateReadTime from "../components/TimeCalculate";
 import socket from "../utils/socket";
 
-export async function handleSaveBlogs(id, token, dispatch) {
+export async function handleSaveBlogs(id, token) {
     try {
         let res = await axios.patch(`${import.meta.env.VITE_BACKEND_URL}/save-blog/${id}`, {}, {
             headers: {
@@ -25,7 +25,7 @@ export async function handleSaveBlogs(id, token, dispatch) {
     }
 }
 
-export async function handleFollowCreator(id, token, dispatch) {
+export async function handleFollowCreator(id, token) {
     try {
         let res = await axios.patch(`${import.meta.env.VITE_BACKEND_URL}/follow/${id}`, {}, {
             headers: {
@@ -91,7 +91,6 @@ function BlogPage() {
             );
         };
         const onBlogLike = ({ blogId, likesCount }) => {
-            console.log("🔥 blog:like received", blogId, likesCount);
 
             if (blogId !== blogData._id) return;
 
@@ -116,12 +115,17 @@ function BlogPage() {
                 comments: new Array(commentsCount).fill("x"),
             }));
         };
+        const onBlogDraft = ({ blogId }) => {
+            if (blogId !== blogData?._id) return;
+            setBlogData(null);
+        };
 
         socket.on("blog:update", onBlogUpdate);
         socket.on("user:update", onUserUpdate);
         socket.on("blog:like", onBlogLike);
         socket.on("blog:comment", onBlogComment);
         socket.on("blog:comment:delete", onCommentDelete);
+        socket.on("blog:draft", onBlogDraft);
 
         return () => {
             socket.off("blog:update", onBlogUpdate);
@@ -130,6 +134,7 @@ function BlogPage() {
             socket.off("blog:comment", onBlogComment);
             socket.off("blog:comment:delete", onCommentDelete);
             socket.emit("leave:blog", blogData._id);
+            socket.off("blog:draft", onBlogDraft);
         };
     }, [blogData?._id]);
 
@@ -230,6 +235,7 @@ function BlogPage() {
             <div className="flex flex-col items-center justify-center h-[60vh]">
                 <h2 className="text-2xl font-semibold">
                     This blog has been deleted
+                    or is no longer available.
                 </h2>
                 <button
                     onClick={() => navigate("/home", { replace: true })}

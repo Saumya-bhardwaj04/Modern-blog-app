@@ -199,7 +199,7 @@ async function updateBlog(req, res) {
         const user = await User.findById(creator).select("-password");
         const blog = await Blog.findOne({ blogId: id })
         if (!blog) {
-            return res.status(200).json({
+            return res.status(404).json({
                 success: false,
                 message: "Blog not found",
             })
@@ -238,20 +238,59 @@ async function updateBlog(req, res) {
             blog.image = secure_url;
             blog.imageId = public_id;
         }
+        const wasDraft = blog.draft;
         blog.title = title || blog.title;
         blog.description = description || blog.description;
         blog.draft = draft;
         blog.content = content || blog.content;
         blog.tags = tags || blog.tags;
-        await blog.save();
-        if (draft) {
-            return res.status(200).json({
-                message: "Blog Saved as Draft. You can again public it from your profile page",
-                blog
-            })
-        }
-        const io = getIO();
 
+        await blog.save();
+        const io = getIO();
+        if (wasDraft === false && draft === true) {
+            io.to("feed").emit("blog:draft", {
+                blogId: blog._id.toString(),
+            });
+
+            io.to(`blog:${blog._id}`).emit("blog:draft", {
+                blogId: blog._id.toString(),
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "Blog Saved as Draft",
+                blog,
+            });
+        }
+        if (wasDraft === true && draft === false) {
+            const publishedBlog = await Blog.findById(blog._id)
+                .populate("creator", "name username profilePic");
+
+            io.to("feed").emit("blog:new", publishedBlog);
+
+            io.to(`blog:${blog._id}`).emit("blog:update", {
+                blogId: blog._id.toString(),
+                data: {
+                    title: publishedBlog.title,
+                    description: publishedBlog.description,
+                    image: publishedBlog.image,
+                    content: publishedBlog.content,
+                    updatedAt: publishedBlog.updatedAt,
+                    creator: {
+                        _id: publishedBlog.creator._id,
+                        name: publishedBlog.creator.name,
+                        username: publishedBlog.creator.username,
+                        profilePic: publishedBlog.creator.profilePic,
+                    },
+                },
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "Blog published successfully",
+                blog: publishedBlog,
+            });
+        }
         const updatedBlog = await Blog.findById(blog._id)
             .populate("creator", "name username profilePic");
 
@@ -287,7 +326,6 @@ async function updateBlog(req, res) {
                 },
             },
         });
-
         return res.status(200).json({
             success: true,
             message: "Blog updated Successfully",
