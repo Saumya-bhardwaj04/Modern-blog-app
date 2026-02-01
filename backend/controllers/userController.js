@@ -416,6 +416,20 @@ async function updateUser(req, res) {
 
         await user.save();
 
+        const io = getIO();
+
+        io.to("feed").emit("user:update", {
+            userId: user._id.toString(),
+            name: user.name,
+            profilePic: user.profilePic,
+        });
+        io.to(`user:${user._id}`).emit("user:update", {
+            userId: user._id,
+            name: user.name,
+            profilePic: user.profilePic,
+            bio: user.bio,
+        });
+
         return res.status(200).json({
             success: true,
             message: "User updated successfully",
@@ -500,6 +514,12 @@ async function deleteUser(req, res) {
             }
         );
         await User.findByIdAndDelete(id);
+
+        const io = getIO();
+        io.to("feed").emit("user:delete", {
+            userId: user._id.toString(),
+        });
+
         return res.status(200).json({
             success: true,
             message: "Account deleted successfully",
@@ -542,27 +562,30 @@ async function followUser(req, res) {
             await User.findByIdAndUpdate(followerId, {
                 $pull: { following: id },
             });
-
-            return res.status(200).json({
-                success: true,
-                message: "Unfollowed",
+        } else {
+            await User.findByIdAndUpdate(id, {
+                $push: { followers: followerId },
+            });
+            await User.findByIdAndUpdate(followerId, {
+                $push: { following: id },
             });
         }
-
-        await User.findByIdAndUpdate(id, {
-            $push: { followers: followerId },
+        const updatedUser = await User.findById(id)
+            .populate("followers", "_id name username profilePic");
+        const updatedFollower = await User.findById(followerId)
+            .populate("following", "_id name username profilePic");
+        const io = getIO();
+        io.to(`user:${id}`).emit("user:followers", {
+            userId: id,
+            followers: updatedUser.followers,
         });
-        await User.findByIdAndUpdate(followerId, {
-            $push: { following: id },
-        });
-
-        res.status(200).json({
-            success: true,
-            message: "Followed",
+        io.to(`user:${followerId}`).emit("user:following:update", {
+            userId: followerId,
+            following: updatedFollower.following,
         });
         if (!isFollowing && id.toString() !== followerId.toString()) {
 
-            const io = getIO();
+            const sender = await User.findById(followerId).select("name username profilePic");
 
             await Notification.create({
                 recipient: id,
@@ -570,11 +593,15 @@ async function followUser(req, res) {
                 type: "follow",
             });
 
-            const sender = await User.findById(followerId).select("name username profilePic");
+
 
             io.to(id.toString()).emit("notification", {
                 type: "follow",
                 sender,
+            });
+            io.to("feed").emit("user:follow", {
+                userId: id,
+                followerId,
             });
 
             if (user.fcmTokens?.length) {
@@ -592,7 +619,10 @@ async function followUser(req, res) {
 
             }
         }
-
+        return res.status(200).json({
+            success: true,
+            message: isFollowing ? "Unfollowed" : "Followed",
+        });
     } catch (err) {
         console.error("FOLLOW ERROR:", err);
         res.status(500).json({
@@ -665,4 +695,4 @@ async function searchUsers(req, res) {
 
     return res.json(users);
 }
-module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken, removeFcmToken,searchUsers };
+module.exports = { createUser, getAllUsers, getUserById, updateUser, deleteUser, login, verifyEmail, googleAuth, followUser, changeSavedLikedBlog, saveFcmToken, removeFcmToken, searchUsers };

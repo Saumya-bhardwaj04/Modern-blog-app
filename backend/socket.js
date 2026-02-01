@@ -24,7 +24,18 @@ function initSocket(server) {
 
     socket.on("join:feed", () => {
       socket.join("feed");
-      console.log("📢 joined feed");
+    });
+    socket.on("join:user", (userId) => {
+      socket.join(userId);
+    });
+    socket.on("join:users", (userId) => {
+      socket.join(`user:${userId}`);
+    });
+    socket.on("join:blog", (blogId) => {
+      socket.join(`blog:${blogId}`);
+    });
+    socket.on("leave:blog", (blogId) => {
+      socket.leave(`blog:${blogId}`);
     });
     
     socket.on("disconnect", () => {

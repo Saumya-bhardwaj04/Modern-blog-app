@@ -1,5 +1,13 @@
 import { createSlice } from "@reduxjs/toolkit";
-
+function normalizeComment(comment) {
+    return {
+        ...comment,
+        likes: Array.isArray(comment.likes) ? comment.likes : [],
+        replies: Array.isArray(comment.replies)
+            ? comment.replies.map(normalizeComment)
+            : [],
+    };
+}
 const selectedBlogSlice = createSlice({
     name: "selectedBlogSlice",
     initialState: JSON.parse(localStorage.getItem("selectedBlog")) || {
@@ -29,75 +37,114 @@ const selectedBlogSlice = createSlice({
             }
         },
         setComments(state, action) {
-            state.comments = [...state.comments, action.payload];
+            state.comments.push(normalizeComment(action.payload));
         },
         setCommentLikes(state, action) {
-            let { commentId, userId } = action.payload;
-            function toogleLike(comments) {
-                return comments.map((comment) => {
-                    if (comment._id == commentId) {
-                        if (comment.likes.includes(userId)) {
-                            comment.likes = comment.likes.filter((like) => like !== userId);
-                            return comment;
-                        } else {
-                            comment.likes = [...comment.likes, userId]
-                            return comment;
-                        }
-                    }
-                    if (comment.replies && comment.replies.length > 0) {
-                        return { ...comment, replies: toogleLike(comment.replies) };
-                    }
-                    return comment;
-                })
-            }
-            state.comments = toogleLike(state.comments);
-        },
-        setReplies(state, action) {
-            let newReply = action.payload;
-            function findParentComment(comments) {
-                let parentComment;
+            const { commentId, userId } = action.payload;
 
-                for (const comment of comments) {
-                    if (comment._id === newReply.parentComment) {
-                        parentComment = {
-                            ...comment, replies: [...comment.replies, newReply],
+            function toggle(comments) {
+                return comments.map(comment => {
+                    if (comment._id === commentId) {
+                        const likes = comment.likes || [];
+                        return {
+                            ...comment,
+                            likes: likes.includes(userId)
+                                ? likes.filter(id => id !== userId)
+                                : [...likes, userId],
                         };
-                        break;
                     }
-                    // for nested replies
-                    if (comment.replies.length > 0) {
-                        parentComment = findParentComment(comment.replies);
-                        if (parentComment) {
-                            parentComment = {
-                                ...comment,
-                                replies: comment.replies.map((reply) => reply._id == parentComment._id ? parentComment : reply),
-                            }
-                            break;
-                        }
+
+                    if (comment.replies?.length) {
+                        return { ...comment, replies: toggle(comment.replies) };
                     }
-                }
-                return parentComment
+
+                    return comment;
+                });
             }
-            let parentComment = findParentComment(state.comments);
-            state.comments = state.comments.map((comment) => comment._id == parentComment._id ? parentComment : comment);
-        },
-        setUpdatedComments(state, action) {
-            function updateComment(comments) {
-                return comments.map((comment) =>
-                    comment._id == action.payload._id ? { ...comment, comment: action.payload.comment } : comment.replies && comment.replies.length > 0 ? { ...comment, replies: updateComment(comment.replies) } : comment
-                )
-            }
-            state.comments = updateComment(state.comments);
-        },
-        deleteCommentAndReply(state, action) {
-            function deleteComment(comments) {
-                return comments
-                    .filter((comment) => comment._id !== action.payload)
-                    .map((comment) => comment.replies && comment.replies.length > 0 ? { ...comment, replies: deleteComment(comment.replies) } : comment
-                    );
-            }
-            state.comments = deleteComment(state.comments);
+
+            state.comments = toggle(state.comments || []);
         }
+        ,
+        setReplies(state, action) {
+            const { parentId, reply } = action.payload;
+
+            function addReply(comments) {
+                return comments.map(comment => {
+                    if (comment._id === parentId) {
+                        return {
+                            ...comment,
+                            replies: [...(comment.replies || []), normalizeComment(reply)],
+                        };
+                    }
+
+                    if (comment.replies?.length) {
+                        return { ...comment, replies: addReply(comment.replies) };
+                    }
+
+                    return comment;
+                });
+            }
+
+            state.comments = addReply(state.comments || []);
+        }
+        ,
+        setUpdatedComments(state, action) {
+            const { _id, comment, userId, name, profilePic } = action.payload;
+
+            function update(comments) {
+                return comments.map(c => {
+                    let updated = c;
+
+                    // 🔹 CASE 1: comment text edit
+                    if (_id && c._id === _id) {
+                        updated = {
+                            ...updated,
+                            comment,
+                        };
+                    }
+
+                    // 🔹 CASE 2: user profile update (name / profilePic)
+                    if (userId && c.user?._id === userId) {
+                        updated = {
+                            ...updated,
+                            user: {
+                                ...updated.user,
+                                ...(name && { name }),
+                                ...(profilePic && { profilePic }),
+                            },
+                        };
+                    }
+
+                    // 🔁 recurse into replies
+                    if (c.replies?.length) {
+                        updated = {
+                            ...updated,
+                            replies: update(c.replies),
+                        };
+                    }
+
+                    return updated;
+                });
+            }
+
+            state.comments = update(state.comments || []);
+        }
+        ,
+        deleteCommentAndReply(state, action) {
+            const id = action.payload;
+
+            function remove(comments) {
+                return comments
+                    .filter(c => c._id !== id)
+                    .map(c => ({
+                        ...c,
+                        replies: c.replies ? remove(c.replies) : [],
+                    }));
+            }
+
+            state.comments = remove(state.comments || []);
+        }
+
     },
 });
 

@@ -137,10 +137,10 @@ function AuthForm({ type }) {
                 permission = await Notification.requestPermission();
             }
 
-            // if (permission !== 'granted') {
-            //     console.warn(`Notification permission denied or dismissed (${permission})`);
-            //     return;
-            // }
+            if (permission !== 'granted') {
+                console.warn(`Notification permission denied or dismissed (${permission})`);
+                return;
+            }
 
             // 3. Refresh FCM token
             const fcmToken = await getToken(messaging, {
@@ -152,12 +152,12 @@ function AuthForm({ type }) {
                 return;
             }
 
-            //store last sent token in localStorage to avoid duplicate POSTs
-            // const lastSentToken = localStorage.getItem('last_fcm_token');
-            // if (fcmToken === lastSentToken) {
-            //     console.log('FCM token unchanged → skipping send');
-            //     return;
-            // }
+            // store last sent token in localStorage to avoid duplicate POSTs
+            const lastSentToken = localStorage.getItem('last_fcm_token');
+            if (fcmToken === lastSentToken) {
+                console.log('FCM token unchanged → skipping send');
+                return;
+            }
 
             // 4. Send to backend
             await axios.post(

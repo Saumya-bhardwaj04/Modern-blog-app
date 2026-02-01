@@ -1,10 +1,12 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import formateDate from "../utils/formateDate";
 import { useSelector } from "react-redux";
 import { handleSaveBlogs } from "../pages/BlogPage";
 
 function DisplayBlogs({ blogs }) {
   const { token, id: userId } = useSelector((state) => state.user);
+  const navigate = useNavigate();
+  
   return (
     <div>
       {blogs.length > 0 ? (
@@ -46,10 +48,12 @@ function DisplayBlogs({ blogs }) {
                     </div>
                     <div
                       className="flex gap-2 cursor-pointer"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleSaveBlogs(blog?._id, token);
-                      }}
+                      onClick={(e) => navigate("/blog/" + blog.blogId)}
+
+                    // onClick={(e) => {
+                    //   e.preventDefault();
+                    //   handleSaveBlogs(blog?._id, token);
+                    // }}
                     >
                       {
                         blog?.totalSaves?.includes(userId) ? (

@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import { Link, Navigate } from "react-router-dom";
 import axios from "axios";
 import { markNotificationRead } from "../utils/getNotification";
+import socket from "../utils/socket";
 
 /* ---------- helpers ---------- */
 
@@ -76,7 +77,7 @@ function mergeNotifications(list) {
 /* ---------- component ---------- */
 
 function Notifications() {
-  const { token } = useSelector((state) => state.user);
+  const { token, id: userId } = useSelector((state) => state.user);
   const [notifications, setNotifications] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -119,7 +120,49 @@ function Notifications() {
 
     fetchNotifications();
   }, [page, token]);
+  useEffect(() => {
+    if (!token) return;
 
+    // ensure socket connection
+    if (!socket.connected) socket.connect();
+    socket.emit("join:user", userId);
+
+    const onNotification = (data) => {
+      console.log("🔔 live notification:", data);
+      const normalized = {
+        _id: `socket-${Date.now()}`,
+        type: data.type,
+        sender: data.sender,
+        blog: data.blogSlug ? { blogId: data.blogSlug } : null,
+        comment: data.commentId ? { _id: data.commentId } : null,
+        createdAt: new Date().toISOString(), // 👈 THIS MAKES IT TODAY
+        isRead: false,
+      };
+
+      // 🔥 PREPEND so it appears under TODAY
+      setNotifications((prev) => {
+        // prevent duplicates
+        if (
+          prev.some(
+            (n) =>
+              n.type === normalized.type &&
+              n.blog?.blogId === normalized.blog?.blogId &&
+              !n.isRead
+          )
+        ) {
+          return prev;
+        }
+
+        return [normalized, ...prev];
+      });
+    };
+    socket.on("notification", onNotification);
+
+    return () => {
+      socket.off("notification", onNotification);
+    };
+  }, [token, userId]);
+  
   async function handleClick(id) {
     await markNotificationRead(id, token);
     setNotifications((prev) =>

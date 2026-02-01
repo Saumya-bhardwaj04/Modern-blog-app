@@ -125,12 +125,13 @@ function Navbar() {
             if (!data?.sender?.name) return;
             fetchUnreadCount(); // 🔥 sync badge
             // setHasUnread(true); // 🔵
+            if (location.pathname === "/notifications" || "/home") return; // don't show toast if on notifications page
             showNotificationToast(data, navigate);
         };
 
         socket.on("notification", handler);
         return () => socket.off("notification", handler);
-    }, [navigate, token]);
+    }, [navigate, token, location.pathname]);
 
     // fcm forground
     useEffect(() => {
@@ -162,20 +163,14 @@ function Navbar() {
 
     async function unregisterFcmToken(authToken) {
         try {
-            const fcmToken = localStorage.getItem("last_fcm_token");
-            if (!fcmToken || !authToken) return;
-
-            // remove from backend
-            await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL} / remove - fcm - token`,
-                { token: fcmToken },
-                {
-                    headers: {
-                        Authorization: `Bearer ${authToken}`,
-                    },
-                }
-            );
-
+            const lastSentToken = localStorage.getItem("last_fcm_token");
+            if (lastSentToken && lastSentToken !== fcmToken) {
+                await axios.post(
+                    `${import.meta.env.VITE_BACKEND_URL}/remove-fcm-token`,
+                    { token: lastSentToken },
+                    { headers: { Authorization: `Bearer ${authToken}` } }
+                );
+            }
             // remove locally
             localStorage.removeItem("last_fcm_token");
             console.log("FCM token removed successfully");

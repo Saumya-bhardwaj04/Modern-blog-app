@@ -5,6 +5,7 @@ import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import { handleFollowCreator } from "./BlogPage";
 import { useSelector } from "react-redux";
 import DisplayBlogs from "../components/DisplayBlogs";
+import socket from "../utils/socket";
 
 function ProfilePage() {
   const { username } = useParams();
@@ -13,6 +14,53 @@ function ProfilePage() {
   const { token, id: userId, following } = useSelector((state) => state.user);
   const location = useLocation();
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token || !userData?._id) return;
+
+    if (!socket.connected) socket.connect();
+
+    socket.emit("join:users", userData._id);
+
+    const onUserUpdate = (data) => {
+      if (data.userId !== userData._id) return;
+
+      setUserData(prev => ({
+        ...prev,
+        name: data.name ?? prev.name,
+        profilePic: data.profilePic ?? prev.profilePic,
+        bio: data.bio ?? prev.bio,
+      }));
+    };
+
+    const onFollowersUpdate = ({ userId, followers }) => {
+      if (userId !== userData._id) return;
+
+      setUserData(prev => ({
+        ...prev,
+        followers,
+      }));
+    };
+
+    const onFollowingUpdate = ({ userId, following }) => {
+      if (userId !== userData._id) return;
+
+      setUserData(prev => ({
+        ...prev,
+        following,
+      }));
+    };
+
+    socket.on("user:update", onUserUpdate);
+    socket.on("user:followers", onFollowersUpdate);
+    socket.on("user:following:update", onFollowingUpdate);
+
+    return () => {
+      socket.off("user:update", onUserUpdate);
+      socket.off("user:followers", onFollowersUpdate);
+      socket.off("user:following:update", onFollowingUpdate);
+    };
+  }, [token, userData?._id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -206,7 +254,8 @@ function ProfilePage() {
                 }}
                 className="bg-green-600 px-7 py-3 rounded-full max-lg:w-full text-white my-3"
               >
-                {userData.followers.some((f) => f._id === userId)
+                {
+                  userData.followers.some((f) => f._id === userId)
                   ? "Following"
                   : "Follow"}
               </button>

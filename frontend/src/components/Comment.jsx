@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { formatMentions } from "./formatMentions.jsx";
 import { useMentions } from "../hooks/useMentions";
+import socket from "../utils/socket";
 
 // prevents duplicate mentions
 function extractMentions(text) {
@@ -24,18 +25,64 @@ function Comment() {
   const { token, id: userId } = useSelector((state) => state.user);
   const commentRef = useRef(null);
   const { mentionUsers, showMentionBox, loading } = useMentions(comment, token);
-    const loggedInUser = useSelector((state) => state.user);
+  const loggedInUser = useSelector((state) => state.user);
 
-  // useEffect(() => {
-  //   const handleComment = ({ blogId: id, comment }) => {
-  //     if (id !== blog._id) return;
+  useEffect(() => {
+    if (!blogId) return;
+    if (!socket.connected) socket.connect();
+    socket.emit("join:blog", blogId);
+    return () => {
+      socket.emit("leave:blog", blogId);
+    }
+  }, [blogId]);
+  useEffect(() => {
+    // 🔹 new comment
+    const onNewComment = ({ comment }) => {
+      dispatch(setComments(comment));
+    };
 
-  //     setComments((prev) => [comment, ...prev]);
-  //   };
+    // 🔹 comment delete
+    const onDeleteComment = ({ commentId }) => {
+      dispatch(deleteCommentAndReply(commentId));
+    };
 
-  //   socket.on("blog-comment", handleComment);
-  //   return () => socket.off("blog-comment", handleComment);
-  // }, [blog]);
+    // 🔹 new reply
+    const onReply = ({ parentId, reply }) => {
+      dispatch(setReplies({ parentId, reply }));
+    };
+
+    // 🔹 user profile update (name / pic)
+    const onUserUpdate = ({ userId, name, profilePic }) => {
+      dispatch(setUpdatedComments({ userId, name, profilePic }));
+    };
+
+    const onCommentLike = ({ commentId, userId, isLiked }) => {
+      dispatch(setCommentLikes({ commentId, userId, isLiked }));
+    }
+    const omCommentEdit = ({ updatedComment }) => {
+      dispatch(setUpdatedComments({
+        _id: updatedComment._id,
+        comment: updatedComment.comment,
+      }));
+    };
+
+    socket.on("comment:new", onNewComment);
+    socket.on("comment:delete", onDeleteComment);
+    socket.on("comment:reply", onReply);
+    socket.on("user:update", onUserUpdate);
+    socket.on("comment:like", onCommentLike);
+    socket.on("comment:update", omCommentEdit);
+
+    return () => {
+      socket.off("comment:new", onNewComment);
+      socket.off("comment:delete", onDeleteComment);
+      socket.off("comment:reply", onReply);
+      socket.off("user:update", onUserUpdate);
+      socket.off("comment:like", onCommentLike);
+      socket.off("comment:update", omCommentEdit);
+    };
+  }, [dispatch]);
+
 
   async function handleComment() {
     try {
@@ -50,7 +97,7 @@ function Comment() {
         }
       )
       setComment("");
-      dispatch(setComments(res.data.newComment));
+      // dispatch(setComments(res.data.newComment));
       toast.success(res.data.message);
     } catch (error) {
       toast.error(error.response.data.message);
@@ -85,42 +132,42 @@ function Comment() {
               <p className="p-2 text-sm text-gray-400">Searching users…</p>
             )}
             {!loading && mentionUsers.length === 0 && (
-                        <p className="p-2 text-sm text-gray-500">No users found</p>
-                      )}
+              <p className="p-2 text-sm text-gray-500">No users found</p>
+            )}
             {!loading && mentionUsers.map((u) => {
-  const isMe = u._id === loggedInUser.id;
+              const isMe = u._id === loggedInUser.id;
 
-  const displayName = isMe ? loggedInUser.name : u.name;
-  const displayProfilePic = isMe
-    ? loggedInUser.profilePic
-    : u.profilePic;
+              const displayName = isMe ? loggedInUser.name : u.name;
+              const displayProfilePic = isMe
+                ? loggedInUser.profilePic
+                : u.profilePic;
 
-  return (
-    <div
-      key={u._id}
-      className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
-      onClick={() => {
-        setComment((prev) =>
-          prev.replace(/@(\w*)$/, `@${u.username} `)
-        );
-      }}
-    >
-      <img
-        src={
-          displayProfilePic ||
-          `https://api.dicebear.com/9.x/initials/svg?seed=${displayName}`
-        }
-        className="w-8 h-8 rounded-full object-cover"
-        alt={u.username}
-      />
+              return (
+                <div
+                  key={u._id}
+                  className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setComment((prev) =>
+                      prev.replace(/@(\w*)$/, `@${u.username} `)
+                    );
+                  }}
+                >
+                  <img
+                    src={
+                      displayProfilePic ||
+                      `https://api.dicebear.com/9.x/initials/svg?seed=${displayName}`
+                    }
+                    className="w-8 h-8 rounded-full object-cover"
+                    alt={u.username}
+                  />
 
-      <div>
-        <p className="font-medium">{u.username}</p>
-        <p className="text-xs text-gray-500">{u.name}</p>
-      </div>
-    </div>
-  );
-})}
+                  <div>
+                    <p className="font-medium">{u.username}</p>
+                    <p className="text-xs text-gray-500">{u.name}</p>
+                  </div>
+                </div>
+              );
+            })}
 
           </div>
         )}
@@ -139,7 +186,14 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
   const dispatch = useDispatch();
   const replyRef = useRef(null);
   const { mentionUsers, showMentionBox, loading } = useMentions(reply, token);
+  const [openReplies, setOpenReplies] = useState({});
 
+  function toggleReplies(commentId) {
+    setOpenReplies((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+  }
   async function handleReply(parentCommentId) {
     try {
       const uniqueMentions = extractMentions(reply);
@@ -155,7 +209,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
       )
       setReply("");
       setActieReply(null);
-      dispatch(setReplies(res.data.newReply));
+      // dispatch(setReplies(res.data.newReply));
       toast.success(res.data.message);
     } catch (error) {
       toast.error(error.response.data.message);
@@ -171,7 +225,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
         }
       );
       toast.success(res.data.message || "Like updated");
-      dispatch(setCommentLikes({ commentId, userId }))
+      // dispatch(setCommentLikes({ commentId, userId }))
     } catch (error) {
       console.log(error);
     }
@@ -200,7 +254,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
           },
         }
       )
-      dispatch(setUpdatedComments(res.data.updatedComment));
+      // dispatch(setUpdatedComments(res.data.updatedComment));
       toast.success(res.data.message);
     } catch (error) {
       toast.error(error.response.data.message);
@@ -218,7 +272,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
           },
         }
       )
-      dispatch(deleteCommentAndReply(id));
+      // dispatch(deleteCommentAndReply(id));
       toast.success(res.data.message);
     } catch (error) {
       toast.error(error.response.data.message);
@@ -350,7 +404,7 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
               <div className="flex justify-between">
                 <div className="flex gap-4">
                   <div className="cursor-pointer flex gap-2">
-                    {comment.likes.includes(userId) ? (
+                    {Array.isArray(comment.likes) && (comment.likes || []).includes(userId) ? (
                       <i
                         onClick={() => handleCommentLike(comment._id)}
                         className="fi fi-sr-thumbs-up text-blue-600 text-lg mt-1"
@@ -361,15 +415,20 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                         className="fi fi-rr-social-network text-xl mt-1"
                       ></i>
                     )}
-                    <p className="text-lg">{comment.likes.length}</p>
+                    <p className="text-lg">{comment.likes?.length || 0}</p>
                   </div>
 
-                  <div className="flex gap-2 cursor-pointer">
-                    <i className="fi fi-sr-comment-alt text-lg mt-1"></i>
-                    <p className="text-lg">
-                      replies({comment.replies?.length || 0})
-                    </p>
-                  </div>
+                    <div
+                      className="flex gap-2 cursor-pointer text-black "
+                      onClick={() => toggleReplies(comment._id)}
+                    >
+                      <i className="fi fi-sr-comment-alt text-lg mt-1"></i>
+                      <p className="text-lg hover:underline">
+                        {openReplies[comment._id]
+                          ? "hide replies"
+                          : `replies(${comment.replies?.length || 0})`}
+                      </p>
+                    </div>
                 </div>
 
                 <p
@@ -403,40 +462,40 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
                       {!loading && mentionUsers.length === 0 && (
                         <p className="p-2 text-sm text-gray-500">No users found</p>
                       )}
-            {!loading && mentionUsers.map((u) => {
-  const isMe = u._id === loggedInUser.id;
+                      {!loading && mentionUsers.map((u) => {
+                        const isMe = u._id === loggedInUser.id;
 
-  const displayName = isMe ? loggedInUser.name : u.name;
-  const displayProfilePic = isMe
-    ? loggedInUser.profilePic
-    : u.profilePic;
+                        const displayName = isMe ? loggedInUser.name : u.name;
+                        const displayProfilePic = isMe
+                          ? loggedInUser.profilePic
+                          : u.profilePic;
 
-  return (
-    <div
-      key={u._id}
-      className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
-      onClick={() => {
-        setReply((prev) =>
-          prev.replace(/@(\w*)$/, `@${u.username} `)
-        );
-      }}
-    >
-      <img
-        src={
-          displayProfilePic ||
-          `https://api.dicebear.com/9.x/initials/svg?seed=${displayName}`
-        }
-        className="w-8 h-8 rounded-full object-cover"
-        alt={u.username}
-      />
+                        return (
+                          <div
+                            key={u._id}
+                            className="flex gap-2 p-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              setReply((prev) =>
+                                prev.replace(/@(\w*)$/, `@${u.username} `)
+                              );
+                            }}
+                          >
+                            <img
+                              src={
+                                displayProfilePic ||
+                                `https://api.dicebear.com/9.x/initials/svg?seed=${displayName}`
+                              }
+                              className="w-8 h-8 rounded-full object-cover"
+                              alt={u.username}
+                            />
 
-      <div>
-        <p className="font-medium">{u.username}</p>
-        <p className="text-xs text-gray-500">{u.name}</p>
-      </div>
-    </div>
-  );
-})}
+                            <div>
+                              <p className="font-medium">{u.username}</p>
+                              <p className="text-xs text-gray-500">{u.name}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
 
                     </div>
                   )}
@@ -458,10 +517,10 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
 
               )}
 
-              {comment.replies.length > 0 && (
+              {openReplies[comment._id] && Array.isArray(comment.replies) && comment.replies.length > 0 && (
                 <div className="pl-6 border-l">
                   <DisplayComments
-                    comments={comment.replies}
+                    comments={comment.replies || []}
                     userId={userId}
                     blogId={blogId}
                     token={token}

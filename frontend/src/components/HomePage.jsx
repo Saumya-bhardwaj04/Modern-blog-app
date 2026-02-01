@@ -9,52 +9,104 @@ function HomePage() {
     const [page, setPage] = useState(1);
     const { token, id: userId } = useSelector((state) => state.user);
     const { blogs, setBlogs, hasMore, isLoading } = usePagination("blogs", {}, 4, page);
+
     useEffect(() => {
         if (!socket.connected) socket.connect();
         socket.emit("join:feed");
+        return () => {
+            socket.disconnect();
+        }
     }, []);
 
     useEffect(() => {
-        // if (!token || !socket.connected) return;
-        // socket.emit("join:feed");
-
         const onNewBlog = (blog) => {
-            setBlogs(prev => {
-                if (prev.some(b => b._id === blog._id)) return prev;
-                return [blog, ...prev];
-            });
+            setBlogs((prev) =>
+                prev.some((b) => b._id === blog._id) ? prev : [blog, ...prev]
+            )
         };
 
-        const onBlogLike = ({ blogId, likes }) => {
+        const onBlogLike = ({ blogId, likesCount }) => {
+            console.log("🔥 blog:like received", blogId, likesCount);
+            setBlogs(prev =>
+                prev.map(b =>
+                    b._id === blogId ? { ...b, likes: new Array(likesCount).fill("x") } : b
+                )
+            );
+        };
+        const onBlogDelete = ({ blogId }) => {
+            console.log("🗑️ blog:delete received", blogId);
+
+            setBlogs(prev =>
+                prev.filter(b => b._id !== blogId)
+            );
+        };
+        const onBlogComment = ({ blogId, commentsCount }) => {
             setBlogs(prev =>
                 prev.map(b =>
                     b._id === blogId
-                        ? { ...b, likes: Array(likes) }
+                        ? { ...b, comments: new Array(commentsCount).fill("x") }
                         : b
                 )
             );
         };
-
-        const onBlogComment = ({ blogId }) => {
+        const onCommentDelete = ({ blogId, commentsCount  }) => {
             setBlogs(prev =>
                 prev.map(b =>
                     b._id === blogId
-                        ? { ...b, comments: [...b.comments, {}] }
+                        ? { ...b, comments: new Array(commentsCount).fill("x") }
                         : b
                 )
+            );
+        }
+        const onBlogUpdate = ({ blogId, data }) => {
+            setBlogs(prev =>
+                prev.map(b =>
+                    b._id === blogId ? { ...b, ...data } : b
+                )
+            );
+        };
+        const onUserUpdate = ({ userId, name, profilePic }) => {
+            setBlogs(prev =>
+                prev.map(b =>
+                    b.creator?._id === userId
+                        ? {
+                            ...b,
+                            creator: {
+                                ...b.creator,
+                                name,
+                                profilePic,
+                            },
+                        }
+                        : b
+                )
+            );
+        };
+        const onUserDelete = ({ userId }) => {
+            setBlogs(prev =>
+                prev.filter(b => b.creator?._id !== userId)
             );
         };
 
         socket.on("blog:new", onNewBlog);
         socket.on("blog:like", onBlogLike);
         socket.on("blog:comment", onBlogComment);
+        socket.on("blog:comment:delete", onCommentDelete);
+        socket.on("blog:delete", onBlogDelete);
+        socket.on("blog:update", onBlogUpdate);
+        socket.on("user:update", onUserUpdate);
+        socket.on("user:delete", onUserDelete);
 
         return () => {
             socket.off("blog:new", onNewBlog);
             socket.off("blog:like", onBlogLike);
             socket.off("blog:comment", onBlogComment);
+            socket.off("blog:comment:delete", onCommentDelete);
+            socket.off("blog:delete", onBlogDelete);
+            socket.off("blog:update", onBlogUpdate);
+            socket.off("user:update", onUserUpdate);
+            socket.off("user:delete", onUserDelete);
         };
-    }, [token, setBlogs]);
+    }, [setBlogs]);
 
 
     return token == null ?

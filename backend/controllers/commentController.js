@@ -37,12 +37,31 @@ async function addComment(req, res) {
                 select: "name email username profilePic"
             })
         });
-        await Blog.findByIdAndUpdate(id, {
-            $push: { comments: newComment._id },
-        })
+
         const io = getIO();
+        const updatedBlog = await Blog.findByIdAndUpdate(
+            id,
+            { $push: { comments: newComment._id } },
+            { new: true }
+        );
+
         io.to("feed").emit("blog:comment", {
             blogId: blog._id.toString(),
+            commentsCount: updatedBlog.comments.length,
+        });
+        io.to(`blog:${blog._id}`).emit("comment:new", {
+            comment: {
+                _id: newComment._id,
+                comment: newComment.comment,
+                createdAt: newComment.createdAt,
+                parentComment: newComment.parentComment || null,
+                user: {
+                    _id: newComment.user._id,
+                    name: newComment.user.name,
+                    username: newComment.user.username,
+                    profilePic: newComment.user.profilePic,
+                },
+            },
         });
         // 🔔 notify only if not self
         if (blog.creator.toString() !== userId.toString()) {
@@ -181,7 +200,17 @@ async function deleteComment(req, res) {
         await deleteCommentAndReplies(id)
 
         await Blog.findByIdAndUpdate(comment.blog._id, { $pull: { comments: id } })
+        const io = getIO();
 
+        const updatedBlog = await Blog.findById(comment.blog._id).select("comments");
+
+        io.to("feed").emit("blog:comment:delete", {
+            blogId: comment.blog._id.toString(),
+            commentsCount: updatedBlog.comments.length,
+        });
+        io.to(`blog:${comment.blog._id}`).emit("comment:delete", {
+            commentId: id,
+        });
         return res.status(200).json({
             success: true,
             message: "comment deleted successfully",
@@ -199,6 +228,7 @@ async function editComment(req, res) {
         const userId = req.user;
         const { id } = req.params;
         const { updateComment } = req.body;
+
         const comment = await Comment.findById(id);
         if (!comment) {
             return res.status(500).json({
@@ -208,7 +238,7 @@ async function editComment(req, res) {
         if (comment.user != userId) {
             return res.status(400).json({
                 success: false,
-                message: "You are not a valid user to edit this comment",
+                message: "You are not allowed to edit this comment",
             })
         }
         const updatedComment = await Comment.findByIdAndUpdate(id, { comment: updateComment }, { new: true }).then((comment) => {
@@ -216,6 +246,13 @@ async function editComment(req, res) {
                 path: "user",
                 select: "name email"
             })
+        });
+        const io = getIO();
+        io.to(`blog:${comment.blog.toString()}`).emit("comment:update", {
+            updatedComment: {
+                _id: updatedComment._id,
+                comment: updatedComment.comment,
+            },
         });
 
         return res.status(200).json({
@@ -254,11 +291,15 @@ async function likeComment(req, res) {
         }
 
         await comment.save();
+
         const io = getIO();
-        io.emit("comment-like", {
+        io.to(`blog:${blog._id}`).emit("comment:like", {
             commentId: comment._id.toString(),
-            likes: comment.likes.length,
+            userId: userId.toString(),
+            isLiked: !alreadyLiked,
         });
+
+
         if (
             !alreadyLiked &&
             comment.user.toString() !== userId.toString()
@@ -345,13 +386,27 @@ async function addNestedComment(req, res) {
         await Comment.findByIdAndUpdate(parentCommentId, {
             $push: { replies: newReply._id }
         });
+        const sender = await User.findById(userId).select("name username profilePic");
         const io = getIO();
 
-        // 🔥 REAL-TIME REPLY
-        io.emit("comment-reply", {
-            parentCommentId,
-            reply: newReply,
+        io.to(`blog:${blogId}`).emit("comment:reply", {
+            parentId: parentCommentId,
+            reply: {
+                _id: newReply._id,
+                comment: newReply.comment,
+                createdAt: newReply.createdAt,
+                likes: [],
+                replies: [],
+                parentComment: parentCommentId,
+                user: {
+                    _id: sender._id,
+                    name: sender.name,
+                    username: sender.username,
+                    profilePic: sender.profilePic,
+                },
+            },
         });
+
         // 🔔 notify parent comment owner (if not self)
         if (comment.user.toString() !== userId.toString()) {
             await Notification.create({
@@ -361,8 +416,6 @@ async function addNestedComment(req, res) {
                 blog: blog._id,
                 comment: comment._id,
             });
-
-            const sender = await User.findById(userId).select("name username profilePic");
             const receiver = await User.findById(comment.user).select("fcmTokens");
 
             io.to(comment.user.toString()).emit("notification", {

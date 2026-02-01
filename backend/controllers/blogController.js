@@ -64,9 +64,9 @@ async function createBlog(req, res) {
             })
         }
         const io = getIO();
-            const populatedBlog = await Blog.findById(blog._id)
-                .populate("creator", "name username profilePic");
-            io.to("feed").emit("blog:new", populatedBlog);
+        const populatedBlog = await Blog.findById(blog._id)
+            .populate("creator", "name username profilePic");
+        io.to("feed").emit("blog:new", populatedBlog);
 
         const followers = author.followers || [];
 
@@ -250,6 +250,44 @@ async function updateBlog(req, res) {
                 blog
             })
         }
+        const io = getIO();
+
+        const updatedBlog = await Blog.findById(blog._id)
+            .populate("creator", "name username profilePic");
+
+        io.to("feed").emit("blog:update", {
+            blogId: updatedBlog._id.toString(),
+            data: {
+                title: updatedBlog.title,
+                description: updatedBlog.description,
+                image: updatedBlog.image,
+                content: updatedBlog.content,
+                updatedAt: updatedBlog.updatedAt,
+                creator: {
+                    _id: updatedBlog.creator._id,
+                    name: updatedBlog.creator.name,
+                    username: updatedBlog.creator.username,
+                    profilePic: updatedBlog.creator.profilePic,
+                },
+            },
+        });
+        io.to(`blog:${updatedBlog._id}`).emit("blog:update", {
+            blogId: updatedBlog._id.toString(),
+            data: {
+                title: updatedBlog.title,
+                description: updatedBlog.description,
+                image: updatedBlog.image,
+                content: updatedBlog.content,
+                updatedAt: updatedBlog.updatedAt,
+                creator: {
+                    _id: updatedBlog.creator._id,
+                    name: updatedBlog.creator.name,
+                    username: updatedBlog.creator.username,
+                    profilePic: updatedBlog.creator.profilePic,
+                },
+            },
+        });
+
         return res.status(200).json({
             success: true,
             message: "Blog updated Successfully",
@@ -278,6 +316,12 @@ async function deleteBlog(req, res) {
         await deleteImagefromCloudinary(blog.imageId);
         await Blog.findByIdAndDelete(id);
         await User.findByIdAndUpdate(creator, { $pull: { blogs: id } })
+
+        const io = getIO();
+        io.to("feed").emit("blog:delete", {
+            blogId: id,
+        });
+
         return res.status(200).json({
             success: true,
             message: "Blog deleted successfully",
@@ -306,29 +350,45 @@ async function likeBlog(req, res) {
         }
         const alreadyLiked = blog.likes.includes(userId);
 
-        if (!alreadyLiked) {
-            await Blog.findByIdAndUpdate(id, { $push: { likes: userId } });
-            await User.findByIdAndUpdate(userId, { $push: { likeBlogs: id } });
-            res.status(200).json({
-                success: true,
-                message: "Blog Liked successfully",
-                isLiked: true,
-            })
-        } else {
-            await Blog.findByIdAndUpdate(id, { $pull: { likes: userId } });
-            await User.findByIdAndUpdate(userId, { $pull: { likeBlogs: id } });
-            res.status(200).json({
-                success: true,
-                message: "Blog Disliked successfully",
-                isLiked: false,
+        let updatedBlog;
 
-            })
+        if (!alreadyLiked) {
+            updatedBlog = await Blog.findByIdAndUpdate(
+                id,
+                { $addToSet: { likes: userId } },
+                { new: true }
+            );
+            await User.findByIdAndUpdate(userId, { $addToSet: { likeBlogs: id } });
+        } else {
+            updatedBlog = await Blog.findByIdAndUpdate(
+                id,
+                { $pull: { likes: userId } },
+                { new: true }
+            );
+            await User.findByIdAndUpdate(userId, { $pull: { likeBlogs: id } });
         }
-        await blog.save();
+
+        const io = getIO();
+
+        // ✅ emit CORRECT count
+        io.to("feed").emit("blog:like", {
+            blogId: updatedBlog._id.toString(),
+            likesCount: updatedBlog.likes.length,
+        });
+        io.to(`blog:${updatedBlog._id}`).emit("blog-like", {
+            blogId: updatedBlog._id.toString(),
+            likesCount: updatedBlog.likes.length,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: alreadyLiked
+                ? "Blog Disliked successfully"
+                : "Blog Liked successfully",
+            isLiked: !alreadyLiked,
+        });
         // 🔔 notify only when liked & not self
         if (!alreadyLiked && blog.creator.toString() !== userId.toString()) {
-            const io = getIO();
-
             await Notification.create({
                 recipient: blog.creator,
                 sender: userId,
@@ -343,16 +403,6 @@ async function likeBlog(req, res) {
                 sender,
                 blogSlug: blog.blogId,
             });
-            io.to("feed").emit("blog:like", {
-                blogId: blog._id.toString(),
-                likes: blog.likes.length,
-            });
-
-            // io.to(`blog:${blog._id}`).emit("blog-like", {
-            //     blogId: blog._id.toString(),
-            //     likes: blog.likes.length,
-            //     userId
-            // });
 
             if (creator.fcmTokens?.length) {
                 sendPush(

@@ -18,6 +18,7 @@ export async function handleSaveBlogs(id, token, dispatch) {
             },
         })
         toast.success(res.data.message);
+        return res.data.isSaved;
     }
     catch (error) {
         toast.error(error.response?.data?.message || "Unable to save blog");
@@ -47,33 +48,90 @@ function BlogPage() {
     const navigate = useNavigate();
     const [isBlogSaved, setIsBlogSaved] = useState(false);
     const { token, email, id: userId, profilePic, following } = useSelector((state) => state.user);
-    const {
-        likes = [],
-        comments = [],
-        content = { blocks: [] },
-        creator = null,
-    } = useSelector((state) => state.selectedBlog || {});
+    // const {
+    //     likes = [],
+    //     comments = [],
+    //     content = { blocks: [] },
+    //     creator = null,
+    // } = useSelector((state) => state.selectedBlog || {});
     const { isOpen } = useSelector((state) => state.comment);
     const [blogData, setBlogData] = useState(null)
     const [loading, setLoading] = useState(true);
     const readTime = calculateReadTime(blogData?.content);
     const [isLike, setIsLike] = useState(false)
+
     useEffect(() => {
         if (!blogData?._id) return;
+
+        if (!socket.connected) socket.connect();
+        socket.emit("join:feed");
         socket.emit("join:blog", blogData._id);
+
+        const onBlogUpdate = ({ blogId, data }) => {
+            if (blogId !== blogData._id) return;
+
+            setBlogData(prev => ({
+                ...prev,
+                ...data, // title, desc, image, content
+                creator: data.creator ?? prev.creator,
+            }));
+        };
+        const onUserUpdate = ({ userId, name, profilePic }) => {
+            setBlogData(prev =>
+                prev?.creator?._id === userId
+                    ? {
+                        ...prev,
+                        creator: {
+                            ...prev.creator,
+                            name,
+                            profilePic,
+                        },
+                    }
+                    : prev
+            );
+        };
+        const onBlogLike = ({ blogId, likesCount }) => {
+            console.log("🔥 blog:like received", blogId, likesCount);
+
+            if (blogId !== blogData._id) return;
+
+            setBlogData(prev => ({
+                ...prev,
+                likes: new Array(likesCount).fill("x"),
+            }));
+        };
+        const onBlogComment = ({ blogId, commentsCount }) => {
+            if (blogId !== blogData._id) return;
+
+            setBlogData(prev => ({
+                ...prev,
+                comments: new Array(commentsCount).fill("x"),
+            }));
+        };
+        const onCommentDelete = ({ blogId, commentsCount }) => {
+            if (blogId !== blogData._id) return;
+
+            setBlogData(prev => ({
+                ...prev,
+                comments: new Array(commentsCount).fill("x"),
+            }));
+        };
+
+        socket.on("blog:update", onBlogUpdate);
+        socket.on("user:update", onUserUpdate);
+        socket.on("blog:like", onBlogLike);
+        socket.on("blog:comment", onBlogComment);
+        socket.on("blog:comment:delete", onCommentDelete);
+
         return () => {
+            socket.off("blog:update", onBlogUpdate);
+            socket.off("user:update", onUserUpdate);
+            socket.off("blog:like", onBlogLike);
+            socket.off("blog:comment", onBlogComment);
+            socket.off("blog:comment:delete", onCommentDelete);
             socket.emit("leave:blog", blogData._id);
         };
     }, [blogData?._id]);
-
-    // useEffect(() => {
-    //     const handleLike = ({ blogId: id, likes }) => {
-    //         if (id !== blog._id) return;
-    //         setLikes(likes);
-    //     };
-    //     socket.on("blog-like", handleLike);
-    //     return () => socket.off("blog-like", handleLike);
-    // }, [blog]);
 
     async function fetchBlogById() {
         try {
@@ -254,11 +312,11 @@ function BlogPage() {
                                     className="fi fi-rr-social-network text-3xl mt-1"
                                 ></i>
                             )}
-                            <p className="text-2xl">{likes.length}</p>
+                            <p className="text-2xl">{blogData.likes?.length || 0}</p>
                         </div>
                         <div className="flex gap-2 cursor-pointer">
                             <i onClick={() => dispatch(setIsOpen())} className="fi fi-sr-comment-alt text-3xl mt-1 "></i>
-                            <p className="text-2xl ">{comments.length}</p>
+                            <p className="text-2xl ">{blogData.comments?.length || 0}</p>
                         </div>
                         <div className="flex gap-2 cursor-pointer"
                             onClick={
@@ -277,7 +335,7 @@ function BlogPage() {
                     </div>
                     <div className="my-10">
                         {
-                            (content.blocks || []).map((block, index) => {
+                            (blogData.content.blocks || []).map((block, index) => {
                                 if (block.type == "header") {
                                     if (block.data.level == 2) {
                                         return <h2 key={index}
