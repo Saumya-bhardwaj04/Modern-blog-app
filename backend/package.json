@@ -11,6 +11,8 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.13.4",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.8.0",
     "cors": "^2.8.5",
@@ -22,6 +24,7 @@
     "multer": "^2.0.2",
     "nodemailer": "^7.0.11",
     "nodemon": "^3.1.10",
+    "openai": "^6.17.0",
     "resend": "^6.7.0",
     "short-unique-id": "^5.3.2",
     "socket.io": "^4.8.3",

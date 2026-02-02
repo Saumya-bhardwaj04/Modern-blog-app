@@ -32,6 +32,11 @@ async function createBlog(req, res) {
                 message: "please add some content"
             })
         }
+        if (!image || image.length === 0) {
+            return res.status(400).json({
+                message: "please add a cover image"
+            })
+        }
         const author = await User.findById(creator)
             .select("name username profilePic followers fcmTokens");
 

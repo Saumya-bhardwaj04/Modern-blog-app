@@ -1,8 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 const dbConnect = require("./config/dbConnect")
+require("dotenv").config();
 const userRoute = require("./routes/userRoutes");
 const blogRoute = require("./routes/blogRoutes");
+const aiRoute = require("./routes/aiRoutes");
 const cloudinaryConfig = require("./config/cloudinaryConfig");
 const { PORT, ALLOWED_ORIGINS } = require("./config/dotenv.config");
 const app = express();
@@ -48,6 +50,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/v1", userRoute);
 app.use("/api/v1", blogRoute);
+app.use("/api/v1/ai", aiRoute);
 
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
