@@ -81,6 +81,10 @@ const userSchema = new mongoose.Schema({
         type: [String],
         default: [],
     },
+    aiUsage: {
+        count: { type: Number, default: 0 },
+        lastUsed: Date,
+    },
 },
     { timestamps: true });
 const User = mongoose.model("User", userSchema)

@@ -20,15 +20,18 @@ import Table from '@editorjs/table'
 import { setIsOpen } from "../utils/commentSlice";
 import { removeSelectedBlog } from "../utils/selectedBlogSlice";
 import useLoader from "../hooks/useLoader";
+import CoachMark from "../components/CoachMark";
 
 function AddBlog() {
     const { id } = useParams();
     const isEdit = Boolean(id);
     const editorjsRef = useRef(null);
     const [isLoading, startLoading, stopLoading] = useLoader();
+    const [isAI, setIsAI] = useState(false);
     const { token } = useSelector(slice => slice.user);
     const { title, description, image, content, draft, tags } = useSelector(slice => slice.selectedBlog);
-
+    const [showAIGuide, setShowAIGuide] = useState(false);
+    const aiButtonRef = useRef(null);
     const [blogData, setBlogData] = useState({
         title: "",
         description: "",
@@ -44,51 +47,48 @@ function AddBlog() {
         await editorjsRef.current.clear();
         await editorjsRef.current.render(data);
     };
-    function extractTextFromEditor(content) {
-        if (!content?.blocks) return "";
-
-        return content.blocks
-            .map(block => {
-                if (block.type === "paragraph" || block.type === "header") {
-                    return block.data.text;
-                }
-                return "";
-            })
-            .join(" ");
-    }
+    useEffect(() => {
+        const seen = localStorage.getItem("ai_guide_seen");
+        if (!seen) setShowAIGuide(true);
+    }, []);
     async function handleAIAssist() {
         try {
-            const text = extractTextFromEditor(blogData.content);
-
-            if (!text || text.length < 50) {
-                return toast.error("Write some content first for AI assist. atleast 50 characters");
+            if (!blogData.title || blogData.title.length < 5) {
+                return toast.error("Title must contain at least 5 characters");
             }
 
-            startLoading();
+            setIsAI(true);
 
             const res = await axios.post(
                 `${import.meta.env.VITE_BACKEND_URL}/ai/blog-assist`,
-                { content: text },
+                { title: blogData.title },
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
                 }
             );
-            const aiData = res.data.data;
+
+            const { description, tags, content } = res.data.data;
 
             setBlogData(prev => ({
                 ...prev,
-                title: aiData.title,
-                description: aiData.description,
-                tags: aiData.tags,
+                description,
+                tags,
+                content,
             }));
+            setTimeout(() => hydrateEditorContent(content), 0);
 
             toast.success("AI suggestions applied ✨");
+
         } catch (err) {
-            toast.error("AI assist failed");
+            if (err.response?.status === 429) {
+                toast.error("AI limit reached 😕 Try again tomorrow");
+            } else {
+                toast.error("AI assist failed");
+            }
         } finally {
-            stopLoading();
+            setIsAI(false);
         }
     }
     useEffect(() => {
@@ -371,10 +371,47 @@ function AddBlog() {
 
                     <div className=" lg:w-3/6">
                         <div className="my-4">
-                            <button onClick={handleAIAssist}
-                                className="bg-black text-white px-6 py-2 rounded-full font-semibold my-3" >
-                                ✨ AI Assist
-                            </button>
+                            <button
+                                ref={aiButtonRef}
+                                onClick={() => {
+                                    if (!isAI) handleAIAssist();
+                                }}
+                                disabled={isAI}
+                                className="bg-black text-white px-6 py-2 rounded-full font-semibold my-3 flex items-center justify-center gap-2 min-w-[140px] h-[40px] relative">
+                                <span
+                                    className={`transition-opacity duration-150  ${isAI ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                                        }`}
+                                >
+                                    ✨ AI Assist
+                                </span>
+
+                                {/* Loader (absolute, centered) */}
+                                {isAI && (
+                                    <span className="absolute mt-1">
+                                        <span className="ai-loader" />
+                                    </span>
+                                )}                            </button>
+
+                            <CoachMark
+                                anchorRef={aiButtonRef}
+                                visible={showAIGuide}
+                                onClose={() => setShowAIGuide(false)}
+                                storageKey="ai_guide_seen"
+                            >
+                                <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                                    ✨ AI Assist
+                                </h4>
+
+                                <p className="text-sm text-gray-600 leading-relaxed">
+                                    Write a <b>title</b> for your blog and click <b>AI Assist</b>.
+                                    <br />
+                                    It will automatically generate:
+                                    <br />• Description
+                                    <br />• Tags
+                                    <br />• Full blog content
+                                </p>
+                            </CoachMark>
+
                             <h2 className="text-2xl font-semibold my-2">Title</h2>
                             <input
                                 type="text"

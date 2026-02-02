@@ -9,7 +9,6 @@ const { PORT, ALLOWED_ORIGINS } = require("./config/dotenv.config");
 const app = express();
 const http = require("http");
 const { initSocket } = require("./socket");
-require("dotenv").config();
 
 const server = http.createServer(app);
 initSocket(server);

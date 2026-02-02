@@ -1,123 +1,145 @@
-const natural = require("natural");
-const stopword = require("stopword");
+const { GoogleGenAI } = require("@google/genai");
+require("dotenv").config();
+const User = require("../models/userSchema");
+
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 exports.aiBlogAssist = async (req, res) => {
   try {
-    let { content } = req.body;
+    const { title } = req.body;
+    const userId = req.user;
 
-    if (!content || content.length < 50) {
+    if (!title || title.trim().length < 5) {
       return res.status(400).json({
         success: false,
-        message: "Not enough content for AI assistance",
+        message: "Title must contain at least 5 characters",
+      });
+    }
+    // 🔹 Fetch user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+    if (!user.aiUsage) {
+      user.aiUsage = { count: 0, lastUsed: null };
+    }
+    // 🔹 Reset AI count daily
+    const today = new Date().toDateString();
+    const lastUsed = user.aiUsage.lastUsed
+      ? new Date(user.aiUsage.lastUsed).toDateString()
+      : null;
+
+    if (lastUsed !== today) {
+      user.aiUsage.count = 0;
+    }
+    const MAX_DAILY_LIMIT = 3;
+
+    if (user.aiUsage.count >= MAX_DAILY_LIMIT) {
+      return res.status(429).json({
+        success: false,
+        message: "AI daily limit reached. Try again tomorrow.",
       });
     }
 
-    /* =========================
-       1. HARD CLEAN (HTML + SPAM)
-    ========================= */
+    // increment
+    user.aiUsage.count += 1;
+    user.aiUsage.lastUsed = new Date();
+    await user.save();
 
-    const cleanText = (text) => {
-      return text
-        // Remove HTML tags (<mark>, <b>, etc.)
-        .replace(/<[^>]*>/g, " ")
-        // Decode &nbsp; and similar
-        .replace(/&nbsp;/gi, " ")
-        .replace(/&amp;/gi, "&")
-        // Kill spam letters (hhhhhh → hhh)
-        .replace(/(.)\1{3,}/g, "$1$1$1")
-        // Remove junk symbols
-        .replace(/[^a-zA-Z0-9.\s]/g, " ")
-        // Normalize spaces
-        .replace(/\s+/g, " ")
-        .trim();
-    };
+    const prompt = `
+From the blog title below, generate:
 
-    const cleanedText = cleanText(content);
+Description (2–3 lines)
+Tags (5–7, comma separated)
+Blog content (20–30 lines total)
 
-    /* =========================
-       2. SENTENCE EXTRACTION
-    ========================= */
+Rules for content:
+- Use headings (##)
+- Use bold for key points
+- Do NOT use markdown symbols like ** or *
+- Keep language simple and readable
+- No HTML
+- Plain text only
+- Use emojies
+- Make it engaging and informative
 
-    const sentences = cleanedText
-      .split(/[.!?]/)
-      .map(s => s.trim())
-      .filter(s => s.length > 15);
 
-    const uniqueSentences = [...new Set(sentences)];
+Title:
+"${title}"
+`;
 
-    /* =========================
-       3. TITLE GENERATION
-       (CAPITAL + SAFE)
-    ========================= */
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
 
-    let title = uniqueSentences[0] || "Untitled Blog Post";
+    const text = response?.candidates?.[0]?.content.parts?.map(p => p.text).join("");
+    if (!text) throw new Error("Empty Gemini response");
 
-    title = title
-      .slice(0, 50)              // Length control
-      .replace(/\s+/g, " ")
-      .trim()
-      .toUpperCase();            // ✅ REQUIRED
+    // ---------------- PARSING ----------------
+    const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
-    if (!/[A-Z]{3,}/.test(title)) {
-      title = "UNTITLED BLOG POST";
+    let description = "";
+    let tags = [];
+    let contentLines = [];
+
+    let section = "";
+
+    for (let line of lines) {
+      if (line.toLowerCase().includes("description")) {
+        section = "description";
+        continue;
+      }
+      if (line.toLowerCase().includes("tag")) {
+        section = "tags";
+        continue;
+      }
+      if (line.toLowerCase().includes("content")) {
+        section = "content";
+        continue;
+      }
+
+      if (section === "description") description += line + " ";
+      if (section === "tags") tags.push(...line.split(","));
+      if (section === "content") contentLines.push(line);
     }
 
-    /* =========================
-       4. DESCRIPTION (2–3 lines)
-    ========================= */
+    description = description.trim();
+    tags = [...new Set(tags.map(t => t.trim().toLowerCase()))].slice(0, 7);
 
-    let description = uniqueSentences.slice(0, 2).join(". ");
-
-    description = description
-      .replace(/\s+/g, " ")
-      .trim();
-
-    if (description.length > 180) {
-      description = description.slice(0, 180) + "...";
-    }
-
-    /* =========================
-       5. TAG GENERATION (NLP)
-    ========================= */
-
-    const STOP_WORDS = new Set([
-      "the","is","am","are","was","were","and","or","to","of","in","on",
-      "for","with","this","that","it","my","name","a","an",
-      "paragraph","sentences","english","nbsp","mark"
-    ]);
-
-    const words = cleanedText
-      .toLowerCase()
-      .split(" ")
-      .filter(w => w.length > 3 && !STOP_WORDS.has(w));
-
-    const freq = {};
-    words.forEach(w => freq[w] = (freq[w] || 0) + 1);
-
-    const tags = Object.entries(freq)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([word]) => word);
-
-    /* =========================
-       6. FINAL RESPONSE
-    ========================= */
+    // -------- CONVERT TO EDITORJS BLOCKS --------
+    const blocks = contentLines.map(line => {
+      if (line.startsWith("##")) {
+        return {
+          type: "header",
+          data: { text: line.replace("##", "").trim(), level: 3 },
+        };
+      }
+      return {
+        type: "paragraph",
+        data: { text: line },
+      };
+    });
 
     return res.status(200).json({
       success: true,
-      source: "rule-based-nlp",
       data: {
-        title,
         description,
         tags,
+        content: { blocks },
       },
     });
 
-  } catch (error) {
-    console.error("AI Assist Error:", error.message);
+  } catch (err) {
+    console.error("Gemini AI Error:", err.message);
     return res.status(500).json({
       success: false,
-      message: "AI assistance failed",
+      message: "AI assist failed",
     });
   }
 };
