@@ -1,7 +1,6 @@
 const express = require("express");
 const cors = require("cors");
 const dbConnect = require("./config/dbConnect")
-require("dotenv").config();
 const userRoute = require("./routes/userRoutes");
 const blogRoute = require("./routes/blogRoutes");
 const aiRoute = require("./routes/aiRoutes");
@@ -10,6 +9,7 @@ const { PORT, ALLOWED_ORIGINS } = require("./config/dotenv.config");
 const app = express();
 const http = require("http");
 const { initSocket } = require("./socket");
+require("dotenv").config();
 
 const server = http.createServer(app);
 initSocket(server);

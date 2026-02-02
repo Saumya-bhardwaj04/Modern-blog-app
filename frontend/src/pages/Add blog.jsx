@@ -44,64 +44,53 @@ function AddBlog() {
         await editorjsRef.current.clear();
         await editorjsRef.current.render(data);
     };
-    // function extractTextFromEditor(content) {
-    //     if (!content?.blocks) return "";
+    function extractTextFromEditor(content) {
+        if (!content?.blocks) return "";
 
-    //     return content.blocks
-    //         .map(block => {
-    //             if (block.type === "paragraph" || block.type === "header") {
-    //                 return block.data.text;
-    //             }
-    //             return "";
-    //         })
-    //         .join(" ");
-    // }
-    // async function handleAIAssist() {
-    //     try {
-    //         const text = extractTextFromEditor(blogData.content);
+        return content.blocks
+            .map(block => {
+                if (block.type === "paragraph" || block.type === "header") {
+                    return block.data.text;
+                }
+                return "";
+            })
+            .join(" ");
+    }
+    async function handleAIAssist() {
+        try {
+            const text = extractTextFromEditor(blogData.content);
 
-    //         if (!text || text.length < 50) {
-    //             return toast.error("Write some content first for AI assist");
-    //         }
+            if (!text || text.length < 50) {
+                return toast.error("Write some content first for AI assist. atleast 50 characters");
+            }
 
-    //         startLoading();
+            startLoading();
 
-    //         const res = await axios.post(
-    //             `${import.meta.env.VITE_BACKEND_URL}/ai/blog-assist`,
-    //             { content: text },
-    //             {
-    //                 headers: {
-    //                     Authorization: `Bearer ${token}`,
-    //                 },
-    //             }
-    //         );
+            const res = await axios.post(
+                `${import.meta.env.VITE_BACKEND_URL}/ai/blog-assist`,
+                { content: text },
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            const aiData = res.data.data;
 
-    //         const aiText = res.data.result;
+            setBlogData(prev => ({
+                ...prev,
+                title: aiData.title,
+                description: aiData.description,
+                tags: aiData.tags,
+            }));
 
-    //         // Simple parsing (safe & viva-friendly)
-    //         const titleMatch = aiText.match(/title[:\-]?(.*)/i);
-    //         const descMatch = aiText.match(/description[:\-]?(.*)/i);
-    //         const tagsMatch = aiText.match(/tags[:\-]?(.*)/i);
-
-    //         setBlogData(prev => ({
-    //             ...prev,
-    //             title: titleMatch?.[1]?.trim() || prev.title,
-    //             description: descMatch?.[1]?.trim() || prev.description,
-    //             tags: tagsMatch
-    //                 ? tagsMatch[1]
-    //                     .split(",")
-    //                     .map(t => t.trim().toLowerCase())
-    //                     .slice(0, 10)
-    //                 : prev.tags,
-    //         }));
-
-    //         toast.success("AI suggestions applied ✨");
-    //     } catch (err) {
-    //         toast.error("AI assist failed");
-    //     } finally {
-    //         stopLoading();
-    //     }
-    // }
+            toast.success("AI suggestions applied ✨");
+        } catch (err) {
+            toast.error("AI assist failed");
+        } finally {
+            stopLoading();
+        }
+    }
     useEffect(() => {
         if (!id && window.location.pathname === "/add-blog") {
             dispatch(removeSelectedBlog());
@@ -382,7 +371,10 @@ function AddBlog() {
 
                     <div className=" lg:w-3/6">
                         <div className="my-4">
-                            
+                            <button onClick={handleAIAssist}
+                                className="bg-black text-white px-6 py-2 rounded-full font-semibold my-3" >
+                                ✨ AI Assist
+                            </button>
                             <h2 className="text-2xl font-semibold my-2">Title</h2>
                             <input
                                 type="text"
