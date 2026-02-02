@@ -371,27 +371,41 @@ function AddBlog() {
 
                     <div className=" lg:w-3/6">
                         <div className="my-4">
-                            <button
-                                ref={aiButtonRef}
-                                onClick={() => {
-                                    if (!isAI) handleAIAssist();
-                                }}
-                                disabled={isAI}
-                                className="bg-black text-white px-6 py-2 rounded-full font-semibold my-3 flex items-center justify-center gap-2 min-w-[140px] h-[40px] relative">
-                                <span
-                                    className={`transition-opacity duration-150  ${isAI ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-                                        }`}
-                                >
-                                    ✨ AI Assist
-                                </span>
-
-                                {/* Loader (absolute, centered) */}
-                                {isAI && (
-                                    <span className="absolute mt-1">
-                                        <span className="ai-loader" />
+                            <div className="flex gap-1 my-3">
+                                {/* ✨ AI Assist Button */}
+                                <button
+                                    ref={aiButtonRef}
+                                    onClick={() => {
+                                        if (!isAI) handleAIAssist();
+                                    }}
+                                    disabled={isAI}
+                                    className="bg-black text-white px-6 py-2 rounded-full font-semibold my-3 flex items-center justify-center gap-2 min-w-[140px] h-[40px] relative">
+                                    <span
+                                        className={`transition-opacity duration-150  ${isAI ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                                            }`}
+                                    >
+                                        ✨ AI Assist
                                     </span>
-                                )}                            </button>
 
+                                    {/* Loader (absolute, centered) */}
+                                    {isAI && (
+                                        <span className="absolute mt-1">
+                                            <span className="ai-loader" />
+                                        </span>
+                                    )}</button>
+                                {/* ⓘ Info Button */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAIGuide(true)}
+                                    className="w-4 h-4 mt-3.5 rounded-full border border-gray-500
+                   flex items-center justify-center text-sm
+                   text-gray-600 hover:bg-gray-100
+                   transition"
+                                    title="How AI Assist works"
+                                >
+                                    i
+                                </button>
+                            </div>
                             <CoachMark
                                 anchorRef={aiButtonRef}
                                 visible={showAIGuide}
@@ -410,6 +424,8 @@ function AddBlog() {
                                     <br />• Tags
                                     <br />• Full blog content
                                 </p>
+                                <p className="text-sm text-gray-600 leading-relaxed mt-1">
+                                    <b>Note :</b>⏳3 AI assists per day (resets daily) </p>
                             </CoachMark>
 
                             <h2 className="text-2xl font-semibold my-2">Title</h2>
@@ -503,31 +519,33 @@ function AddBlog() {
                     <div id="editorjs" className="w-full"></div>
                 </div>
 
-                {!isLoading ? (
-                    <div>
-                        <button
-                            className="bg-blue-500 px-7 py-3 rounded-full  font-semibold text-white my-6 "
-                            onClick={id ? handleUpdateBlog : handlePostBlog}
-                        >
-                            {blogData.draft
-                                ? "Save as Draft"
-                                : id
-                                    ? "Update blog"
-                                    : "Post blog"}
-                        </button>
-                        <button
-                            className={` mx-4 px-7 py-3 rounded-full text-white my-3 bg-black`}
-                            onClick={() => navigate(-1)}
-                        >
-                            Back
-                        </button>
-                    </div>
-                ) : (
-                    <div className="flex justify-center items-center w-full h-[calc(100vh-500px)]">
-                        <span className="loader"></span>
-                    </div>
-                )}
-            </div>
+                {
+                    !isLoading ? (
+                        <div>
+                            <button
+                                className="bg-blue-500 px-7 py-3 rounded-full  font-semibold text-white my-6 "
+                                onClick={id ? handleUpdateBlog : handlePostBlog}
+                            >
+                                {blogData.draft
+                                    ? "Save as Draft"
+                                    : id
+                                        ? "Update blog"
+                                        : "Post blog"}
+                            </button>
+                            <button
+                                className={` mx-4 px-7 py-3 rounded-full text-white my-3 bg-black`}
+                                onClick={() => navigate(-1)}
+                            >
+                                Back
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex justify-center items-center w-full h-[calc(100vh-500px)]">
+                            <span className="loader"></span>
+                        </div>
+                    )
+                }
+            </div >
         );
 }
 export default AddBlog;

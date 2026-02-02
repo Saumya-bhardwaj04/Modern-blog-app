@@ -297,7 +297,6 @@ function DisplayComments({ comments, userId, blogId, token, activeReply, setActi
         return (
           <div key={comment._id}>
             <hr className="my-2" />
-
             <div className="flex flex-col gap-2 my-4">
               <div className="flex w-full justify-between">
                 <Link to={`/@${comment.user.username}`} className="flex gap-2">
