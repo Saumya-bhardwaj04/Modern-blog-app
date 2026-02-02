@@ -83,7 +83,7 @@ function AddBlog() {
 
         } catch (err) {
             if (err.response?.status === 429) {
-                toast.error("AI limit reached 😕 Try again tomorrow");
+                toast.error("You have reached the AI limit 😕 Try again tomorrow");
             } else {
                 toast.error("AI assist failed");
             }
