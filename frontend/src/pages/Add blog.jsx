@@ -87,7 +87,7 @@ function AddBlog() {
                 // if (type === "RATE_LIMIT"){
                 //     toast.error(err.response.data.message);
                 // }else{
-                toast.error(err.response.data.message);
+                toast.error("You have reached the AI limit 😕 Try again tomorrow");
                 // }
             } else {
                 toast.error("AI assist failed");

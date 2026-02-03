@@ -43,13 +43,7 @@ exports.aiBlogAssist = async (req, res) => {
       return res.status(429).json({
         success: false,
         message: "You have reached the AI limit 😕 Try again tomorrow",
-        type: "DAILY_LIMIT",
       });
-      // return res.status(429).json({
-      //   success: false,
-      //   message: "Too many requests 🫨 Please wait a minute",
-      //   type: "RATE_LIMIT",
-      // });
     }
 
     // increment
