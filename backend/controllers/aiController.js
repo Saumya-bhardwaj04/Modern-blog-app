@@ -42,8 +42,14 @@ exports.aiBlogAssist = async (req, res) => {
     if (user.aiUsage.count >= MAX_DAILY_LIMIT) {
       return res.status(429).json({
         success: false,
-        message: "AI daily limit reached. Try again tomorrow.",
+        message: "You have reached the AI limit 😕 Try again tomorrow",
+        type: "DAILY_LIMIT",
       });
+      // return res.status(429).json({
+      //   success: false,
+      //   message: "Too many requests 🫨 Please wait a minute",
+      //   type: "RATE_LIMIT",
+      // });
     }
 
     // increment
