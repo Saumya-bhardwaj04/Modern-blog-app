@@ -45,12 +45,6 @@ exports.aiBlogAssist = async (req, res) => {
         message: "You have reached the AI limit 😕 Try again tomorrow",
       });
     }
-
-    // increment
-    user.aiUsage.count += 1;
-    user.aiUsage.lastUsed = new Date();
-    await user.save();
-
     const prompt = `
 From the blog title below, generate:
 
@@ -81,6 +75,11 @@ Title:
     const text = response?.candidates?.[0]?.content.parts?.map(p => p.text).join("");
     if (!text) throw new Error("Empty Gemini response");
 
+    // increment
+    user.aiUsage.count += 1;
+    user.aiUsage.lastUsed = new Date();
+    await user.save();
+
     // ---------------- PARSING ----------------
     const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
@@ -91,28 +90,35 @@ Title:
     let section = "";
 
     for (let line of lines) {
-      if (line.toLowerCase().includes("description")) {
+      const lower = line.toLowerCase();
+
+      if (lower.startsWith("description")) {
         section = "description";
         continue;
       }
-      if (line.toLowerCase().includes("tag")) {
+      if (lower.startsWith("tags")) {
         section = "tags";
         continue;
       }
-      if (line.toLowerCase().includes("content")) {
+      if (lower.startsWith("blog") || lower.startsWith("content")) {
         section = "content";
         continue;
       }
 
       if (section === "description") description += line + " ";
-      if (section === "tags") tags.push(...line.split(","));
+      if (section === "tags") {
+        tags.push(
+          ...line
+            .replace(/[-•]/g, "")
+            .split(",")
+            .map(t => t.trim())
+        );
+      }
       if (section === "content") contentLines.push(line);
     }
 
-    description = description.trim();
-    tags = [...new Set(tags.map(t => t.trim().toLowerCase()))].slice(0, 7);
+    tags = [...new Set(tags)].slice(0, 7);
 
-    // -------- CONVERT TO EDITORJS BLOCKS --------
     const blocks = contentLines.map(line => {
       if (line.startsWith("##")) {
         return {
@@ -126,10 +132,11 @@ Title:
       };
     });
 
-    return res.status(200).json({
+    return res.json({
       success: true,
+      message: "AI suggestions applied ✨",
       data: {
-        description,
+        description: description.trim(),
         tags,
         content: { blocks },
       },
@@ -137,9 +144,10 @@ Title:
 
   } catch (err) {
     console.error("Gemini AI Error:", err.message);
-    return res.status(500).json({
+    return res.status(429).json({
       success: false,
-      message: "AI assist failed",
+      message: "AI service busy 😕 Please try again later",
+      type: "RATE_LIMIT",
     });
   }
 };

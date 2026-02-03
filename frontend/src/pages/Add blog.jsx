@@ -79,19 +79,12 @@ function AddBlog() {
             }));
             setTimeout(() => hydrateEditorContent(content), 0);
 
-            toast.success("AI suggestions applied ✨");
+            toast.success(res.data.message || "AI suggestions applied ✨");
 
         } catch (err) {
-            if (err.response?.status === 429) {
-                // const type = err.response.data?.type;
-                // if (type === "RATE_LIMIT"){
-                //     toast.error(err.response.data.message);
-                // }else{
-                toast.error("You have reached the AI limit 😕 Try again tomorrow");
-                // }
-            } else {
-                toast.error("AI assist failed");
-            }
+            toast.error(
+                err.response?.data?.message || "AI assist failed"
+            );
         } finally {
             setIsAI(false);
         }
