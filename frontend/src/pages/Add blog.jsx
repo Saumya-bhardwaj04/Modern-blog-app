@@ -386,7 +386,7 @@ function AddBlog() {
                                     disabled={isAI}
                                     className="bg-black text-white px-6 py-2 rounded-full font-semibold my-3 flex items-center justify-center gap-2 min-w-[140px] h-[40px] relative">
                                     <span
-                                        className={`transition-opacity duration-150  ${isAI ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                                        className={`transition-opacity duration-150 ${isAI ? "cursor-not-allowed opacity-50" : "cursor-pointer"
                                             }`}
                                     >
                                         ✨ AI Assist
@@ -402,10 +402,7 @@ function AddBlog() {
                                 <button
                                     type="button"
                                     onClick={() => setShowAIGuide(true)}
-                                    className="w-4 h-4 mt-3.5 rounded-full border border-gray-500
-                   flex items-center justify-center text-sm
-                   text-gray-600 hover:bg-gray-100
-                   transition"
+                                    className="w-4 h-4 mt-3.5 rounded-full border border-gray-500 flex items-center justify-center text-sm text-gray-600 hover:bg-gray-100 transition"
                                     title="How AI Assist works"
                                 >
                                     i

@@ -64,17 +64,17 @@ export default function CoachMark({
   if (!visible || !anchorRef.current) return null;
 
   const rect = anchorRef.current.getBoundingClientRect();
-  const isMobile = window.innerWidth < 640;
+  // const isMobile = window.innerWidth < 640;
 
   return (
     <div
       ref={guideRef}
-      className="fixed z-50 bg-white border shadow-xl rounded-xl p-4
-                 w-[90vw] max-w-[320px] animate-fade-in"
+      className={`absolute z-50 bg-white border shadow-xl rounded-xl p-4
+                 w-[90vw] max-w-[320px] ${visible ? "animate-fade-in" : "animate-fade-out"}`}
       style={{
-        top: rect.bottom + 12,
-        left: isMobile ? "50%" : rect.left,
-        transform: isMobile ? "translateX(-50%)" : "none",
+        top: rect.bottom + window.scrollY + 10,
+        // left: isMobile ? "50%" : rect.left + window.scrollX,
+        // transform: isMobile ? "translateX(-50%)" : "none",
       }}
     >
       {/* Arrow */}
