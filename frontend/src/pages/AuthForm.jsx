@@ -16,7 +16,7 @@ function AuthForm({ type }) {
         password: "",
     });
     const [googleLoading, setGoogleLoading] = useState(false);
-    const token = useSelector((state) => state.user?.token);
+    // const token = useSelector((state) => state.user?.token);
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -117,17 +117,11 @@ function AuthForm({ type }) {
     //         console.error("FCM registration failed:", err.message);
     //     }
     // }
-    function isIOS() {
-        return /iPad|iPhone|iPod/.test(navigator.userAgent);
-    }
+
     async function registerFcmToken(authToken) {
         // Bail early if no auth (user not logged in)
         if (!authToken) {
             console.log('No auth token provided → skipping FCM registration');
-            return;
-        }
-        if (isIOS()) {
-            console.log('iOS detected → skipping FCM registration (not supported)');
             return;
         }
 
@@ -202,11 +196,11 @@ function AuthForm({ type }) {
             }
         }
     }
-    useEffect(() => {
-        if (Notification.permission === 'granted' && token) {
-            registerFcmToken(token);
-        }
-    }, [token]);
+    // useEffect(() => {
+    //     if (Notification.permission === 'granted' && token) {
+    //         registerFcmToken(token);
+    //     }
+    // }, [token]);
 
     useEffect(() => {
         async function handleRedirect() {
