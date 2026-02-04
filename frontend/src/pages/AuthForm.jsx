@@ -2,12 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch,useSelector } from "react-redux";
 import { login } from "../utils/userSlice";
 import Input from "../components/Input";
 import googleIcon from "../assets/google-icon-logo-svgrepo-com.svg";
 import { googleAuth, handleRedirectResult } from "../utils/firebase";
-import { messaging, getToken } from "../utils/firebase";
+import { messaging, getToken } from "../utils/firebase"; 
 
 function AuthForm({ type }) {
     const [userData, setUserData] = useState({
@@ -16,6 +16,7 @@ function AuthForm({ type }) {
         password: "",
     });
     const [googleLoading, setGoogleLoading] = useState(false);
+    const { token} = useSelector((state) => state.user?.token);
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -197,7 +198,7 @@ function AuthForm({ type }) {
         }
     }
     useEffect(() => {
-        if(notification.permission === 'granted' && token) {
+        if(Notification.permission === 'granted' && token) {
             registerFcmToken(token);
         }
     }, [token]);
