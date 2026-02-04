@@ -196,6 +196,11 @@ function AuthForm({ type }) {
             }
         }
     }
+    useEffect(() => {
+        if(notification.permission === 'granted' && token) {
+            registerFcmToken(token);
+        }
+    }, [token]);
 
     useEffect(() => {
         async function handleRedirect() {
