@@ -2,12 +2,12 @@ import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useDispatch,useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { login } from "../utils/userSlice";
 import Input from "../components/Input";
 import googleIcon from "../assets/google-icon-logo-svgrepo-com.svg";
 import { googleAuth, handleRedirectResult } from "../utils/firebase";
-import { messaging, getToken } from "../utils/firebase"; 
+import { messaging, getToken } from "../utils/firebase";
 
 function AuthForm({ type }) {
     const [userData, setUserData] = useState({
@@ -117,11 +117,17 @@ function AuthForm({ type }) {
     //         console.error("FCM registration failed:", err.message);
     //     }
     // }
-
+    function isIOS() {
+        return /iPad|iPhone|iPod/.test(navigator.userAgent);
+    }
     async function registerFcmToken(authToken) {
         // Bail early if no auth (user not logged in)
         if (!authToken) {
             console.log('No auth token provided → skipping FCM registration');
+            return;
+        }
+        if (isIOS()) {
+            console.log('iOS detected → skipping FCM registration (not supported)');
             return;
         }
 
@@ -197,7 +203,7 @@ function AuthForm({ type }) {
         }
     }
     useEffect(() => {
-        if(Notification.permission === 'granted' && token) {
+        if (Notification.permission === 'granted' && token) {
             registerFcmToken(token);
         }
     }, [token]);
