@@ -141,6 +141,7 @@ function AuthForm({ type }) {
                 console.warn(`Notification permission denied or dismissed (${permission})`);
                 return;
             }
+            localStorage.removeItem('last_fcm_token');
 
             // 3. Refresh FCM token
             const fcmToken = await getToken(messaging, {
