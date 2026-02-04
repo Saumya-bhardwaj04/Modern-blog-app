@@ -16,7 +16,7 @@ function AuthForm({ type }) {
         password: "",
     });
     const [googleLoading, setGoogleLoading] = useState(false);
-    const { token} = useSelector((state) => state.user?.token);
+    const token = useSelector((state) => state.user?.token);
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -121,14 +121,14 @@ function AuthForm({ type }) {
     async function registerFcmToken(authToken) {
         // Bail early if no auth (user not logged in)
         if (!authToken) {
-            console.warn('No auth token provided → skipping FCM registration');
+            console.log('No auth token provided → skipping FCM registration');
             return;
         }
 
         try {
             // 1. Check if Notifications API is supported
             if (!('Notification' in window)) {
-                console.warn('This browser does not support notifications');
+                console.log('This browser does not support notifications');
                 return;
             }
 
@@ -139,7 +139,7 @@ function AuthForm({ type }) {
             }
 
             if (permission !== 'granted') {
-                console.warn(`Notification permission denied or dismissed (${permission})`);
+                console.log(`Notification permission denied or dismissed (${permission})`);
                 return;
             }
             localStorage.removeItem('last_fcm_token');
@@ -150,7 +150,7 @@ function AuthForm({ type }) {
             });
 
             if (!fcmToken) {
-                console.warn('No registration token available');
+                console.log('No registration token available');
                 return;
             }
 
@@ -189,7 +189,7 @@ function AuthForm({ type }) {
                         localStorage.removeItem('last_fcm_token');
                         break;
                     case 'messaging/permission-blocked':
-                        console.warn('User has permanently blocked notifications');
+                        console.log('User has permanently blocked notifications');
                         break;
                     default:
                     // network, invalid vapidKey, etc.
