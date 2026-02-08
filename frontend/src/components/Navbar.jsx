@@ -222,7 +222,7 @@ function Navbar() {
                         </div>
                     </Link>
                     <div
-                        className={`relative max-sm:absolute max-sm:z-40 max-sm:top-16 sm:block ${showSearchBar ? " max-sm:block " : " max-sm:hidden "}`}>
+                        className={`group relative max-sm:absolute max-sm:z-40 max-sm:top-16 sm:block ${showSearchBar ? " max-sm:block " : " max-sm:hidden "}`}>
                         <i className="fi fi-rr-search absolute text-lg top-1/2 -translate-y-1/2  ml-4 opacity-40 mt-0.5"></i>
                         <input
                             type="text"
@@ -247,7 +247,7 @@ function Navbar() {
                         // }}
                         />
                         {isStartPage && (
-                            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-sm px-3 py-1 rounded-md whitespace-nowrap z-50">
+                            <div className="group absolute top-full mt-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-gray-800 text-white text-sm px-3 py-1 rounded-md whitespace-nowrap z-50">
                                 Login to enable search
                             </div>
                         )}
