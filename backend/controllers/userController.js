@@ -234,7 +234,6 @@ async function googleAuth(req, res) {
         })
 
     } catch (error) {
-        console.error("Google Auth Error:", error);
         return res.status(500).json({
             success: false,
             message: "Google authentication failed",
@@ -526,7 +525,6 @@ async function deleteUser(req, res) {
         });
 
     } catch (error) {
-        console.error("Delete user error:", error);
         return res.status(500).json({
             success: false,
             message: "Please try again",
@@ -624,7 +622,6 @@ async function followUser(req, res) {
             message: isFollowing ? "Unfollowed" : "Followed",
         });
     } catch (err) {
-        console.error("FOLLOW ERROR:", err);
         res.status(500).json({
             success: false,
             message: "Server error",

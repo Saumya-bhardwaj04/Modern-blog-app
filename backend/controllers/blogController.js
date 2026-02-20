@@ -372,7 +372,6 @@ async function deleteBlog(req, res) {
         })
     }
     catch (error) {
-        console.error(error);
         return res.status(500).json({
             success: false,
             message: "Please try again"
@@ -465,7 +464,6 @@ async function likeBlog(req, res) {
         }
 
     } catch (err) {
-        console.error("LIKE BLOG ERROR:", err);
         res.status(500).json({
             success: false,
             message: "Server error",

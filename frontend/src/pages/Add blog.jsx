@@ -370,7 +370,6 @@ function AddBlog() {
                     <div className=" lg:w-3/6">
                         <div className="my-4">
                             <div className="flex gap-1 my-3">
-                                {/* ✨ AI Assist Button */}
                                 <button
                                     ref={aiButtonRef}
                                     onClick={() => {
@@ -385,13 +384,11 @@ function AddBlog() {
                                         ✨ AI Assist
                                     </span>
 
-                                    {/* Loader (absolute, centered) */}
                                     {isAI && (
                                         <span className="absolute mt-1">
                                             <span className="ai-loader" />
                                         </span>
                                     )}</button>
-                                {/* ⓘ Info Button */}
                                 <button
                                     type="button"
                                     onClick={() => setShowAIGuide(true)}

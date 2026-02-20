@@ -17,7 +17,6 @@ exports.aiBlogAssist = async (req, res) => {
         message: "Title must contain at least 5 characters",
       });
     }
-    // 🔹 Fetch user
     const user = await User.findById(userId);
     if (!user) {
       return res.status(401).json({
@@ -28,7 +27,6 @@ exports.aiBlogAssist = async (req, res) => {
     if (!user.aiUsage) {
       user.aiUsage = { count: 0, lastUsed: null };
     }
-    // 🔹 Reset AI count daily
     const today = new Date().toDateString();
     const lastUsed = user.aiUsage.lastUsed
       ? new Date(user.aiUsage.lastUsed).toDateString()
@@ -75,12 +73,10 @@ Title:
     const text = response?.candidates?.[0]?.content.parts?.map(p => p.text).join("");
     if (!text) throw new Error("Empty Gemini response");
 
-    // increment
     user.aiUsage.count += 1;
     user.aiUsage.lastUsed = new Date();
     await user.save();
 
-    // ---------------- PARSING ----------------
     const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
 
     let description = "";

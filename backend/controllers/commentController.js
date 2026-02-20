@@ -158,7 +158,6 @@ async function addComment(req, res) {
         });
     }
     catch (err) {
-        console.error("ADD COMMENT ERROR:", err);
         return res.status(500).json({
             success: false,
             message: "Please try again"
@@ -342,7 +341,6 @@ async function likeComment(req, res) {
             isLiked: !alreadyLiked,
         });
     } catch (err) {
-        console.error("LIKE COMMENT ERROR:", err);
         res.status(500).json({
             success: false,
             message: "Server error",
